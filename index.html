@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SeConecta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Design system: tokens ===== */
+:root{
+  --blue:#243F8F; --blue-700:#1A2F6E; --blue-100:#D9E1F4; --blue-50:#EEF2FA;
+  --teal:#176B68;
+  --bg:#F8F7F2; --surface:#FFFFFF;
+  --text:#1F2937; --text-2:#596579; --border:#7D889B; --soft:#D0D5DD;
+  --ok:#207245; --ok-bg:#E6F3EA; --att:#8A4B08; --att-bg:#FDF0E0;
+  --err:#B42318; --err-bg:#FCE9E7; --info:#243F8F; --info-bg:#E8EDF8; --neu-bg:#EEF0F3;
+  --u2:#B5600C;
+  --xs:8px; --sm:16px; --md:24px; --lg:32px; --xl:48px;
+  --r-field:8px; --r-card:12px;
+  --font:Inter,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 var(--font)}
+h1,h2,h3,p{margin:0}
+h1{font-size:32px;line-height:1.2;font-weight:700;color:var(--blue);letter-spacing:-.01em}
+h2{font-size:24px;line-height:1.3;font-weight:600}
+h3{font-size:20px;line-height:1.35;font-weight:600}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.lab{font-size:14px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);display:flex;align-items:center;gap:8px}
+.t2{color:var(--text-2)}.sm{font-size:14px}
+.mono{font-family:ui-monospace,Consolas,"Courier New",monospace;letter-spacing:-.01em}
+.ic{flex:none;display:block}
+
+/* ===== Estrutura (referência: menu lateral azul) ===== */
+.app{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100vh;background:linear-gradient(90deg,var(--blue) 264px,var(--bg) 264px)}
+.side{background:var(--blue);color:#fff;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:32px 0 24px 16px}
+.logo{display:flex;align-items:center;gap:12px;padding:0 16px 48px 8px;background:none;border:0;color:#fff;cursor:pointer;text-align:left}
+.logo b{display:block;font-size:22px;font-weight:700;line-height:1.2}
+.logo span{display:block;font-size:13px;color:#CFD8F0;line-height:1.3}
+.nav{display:flex;flex-direction:column;gap:8px}
+.navi{position:relative;display:flex;align-items:center;gap:16px;min-height:52px;padding:0 24px 0 20px;border:0;border-radius:26px 0 0 26px;background:none;color:#E4E9F6;font-size:16px;font-weight:500;text-align:left;cursor:pointer}
+.navi:hover{background:rgba(255,255,255,.09)}
+.navi[aria-current=page]{background:var(--bg);color:var(--blue);font-weight:700}
+.navi[aria-current=page]::before,.navi[aria-current=page]::after{content:"";position:absolute;right:0;width:24px;height:24px;pointer-events:none}
+.navi[aria-current=page]::before{top:-24px;background:radial-gradient(circle at 0 0,transparent 23.5px,var(--bg) 24px)}
+.navi[aria-current=page]::after{bottom:-24px;background:radial-gradient(circle at 0 100%,transparent 23.5px,var(--bg) 24px)}
+.navi:focus-visible{outline-color:#fff;outline-offset:-4px}
+.side-foot{margin-top:auto;padding:0 16px 0 8px}
+.side-foot p{font-size:13px;color:#CFD8F0;border:1px dashed rgba(255,255,255,.45);border-radius:8px;padding:8px 12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:24px 40px 8px}
+.crumbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--text-2)}
+.crumbs button{border:0;background:none;padding:0;color:var(--blue);cursor:pointer;font-weight:500}
+.crumbs button:hover{text-decoration:underline}
+.crumbs i{font-style:normal;color:var(--border)}
+.crumbs strong{color:var(--text);font-weight:600}
+.who{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.who label{display:block;font-size:13px;color:var(--text-2);margin-bottom:4px}
+.who select{height:44px;border-radius:8px;border:1px solid var(--border);background:#fff;padding:0 12px;min-width:200px}
+.user{display:flex;align-items:center;gap:12px}
+.user div b{display:block;font-size:15px;font-weight:600;line-height:1.3}
+.user div span{display:block;font-size:13px;color:var(--text-2)}
+main{padding:16px 40px 48px;max-width:1360px;outline:0}
+@media (max-width:900px){
+  .app{display:block;background:var(--bg)}
+  .side{position:static;height:auto;padding:16px;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px}
+  .logo{padding:0 8px 8px 0}
+  .nav{flex-direction:row;flex-wrap:wrap;gap:4px;width:100%}
+  .navi{border-radius:8px;min-height:44px;padding:0 12px;gap:8px;font-size:15px}
+  .navi[aria-current=page]{background:#fff}
+  .navi::before,.navi::after{display:none!important}
+  .side-foot{display:none}
+  .top{padding:16px 16px 0}
+  main{padding:16px 16px 40px}
+}
+
+/* ===== Botões ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 24px;border-radius:var(--r-field);border:2px solid transparent;font-size:16px;font-weight:600;line-height:1;cursor:pointer;white-space:nowrap}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-700)}
+.btn-secondary{background:#fff;border-color:var(--blue);color:var(--blue)}
+.btn-secondary:hover{background:var(--blue-50)}
+.btn-danger{background:var(--err);color:#fff}
+.btn-danger:hover{background:#921C13}
+.btn-block{width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary:disabled:hover{background:var(--blue)}
+.lnk{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0;border:0;background:none;color:var(--blue);font-size:16px;font-weight:600;cursor:pointer}
+.lnk:hover{text-decoration:underline}
+.lnk.teal{color:var(--teal)}
+.actions{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+
+/* ===== Campos ===== */
+.field{margin-bottom:24px}
+.field:last-child{margin-bottom:0}
+.lbl{display:block;font-size:16px;font-weight:600;margin-bottom:8px}
+.inp{width:100%;min-height:48px;padding:0 16px;border:1px solid var(--border);border-radius:var(--r-field);background:#fff;color:var(--text)}
+textarea.inp{padding:12px 16px;min-height:104px;resize:vertical;line-height:1.5}
+select.inp{appearance:none;padding-right:44px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1.5l6 6 6-6' fill='none' stroke='%23596579' stroke-width='1.8'/%3E%3C/svg%3E") no-repeat right 16px center}
+.inp:disabled{background:#F2F3F5;color:var(--text-2)}
+.inp::placeholder{color:#6B7486}
+.hint{font-size:14px;color:var(--text-2);margin-top:8px}
+.invalid .inp,.invalid .choice{border:2px solid var(--err)}
+.ferr{font-size:14px;font-weight:600;color:var(--err);margin-top:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+.grid2 .full{grid-column:1/-1}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+.choice{display:flex;gap:12px;align-items:flex-start;padding:16px;border:1px solid var(--border);border-radius:var(--r-field);cursor:pointer;margin-bottom:8px;background:#fff}
+.choice:last-child{margin-bottom:0}
+.choice input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--blue);flex:none}
+.choice b{display:block;font-weight:600}
+.choice span{display:block;font-size:14px;color:var(--text-2)}
+.choice:has(input:checked){border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue);background:var(--blue-50)}
+.choice:has(input:disabled){opacity:.55;cursor:not-allowed}
+.grid3 .choice{margin:0;border-top-width:4px}
+.choice.cu1{border-top-color:var(--blue)}.choice.cu2{border-top-color:var(--u2)}.choice.cu3{border-top-color:var(--err)}
+.chk{display:flex;gap:12px;align-items:center;min-height:44px;cursor:pointer}
+.chk input{width:20px;height:20px;accent-color:var(--blue);flex:none}
+.chk:has(input:disabled){opacity:.6;cursor:not-allowed}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:var(--r-field);overflow:hidden;background:#fff;flex-wrap:wrap}
+.seg label{display:flex;align-items:center;min-height:44px;padding:0 16px;font-size:15px;cursor:pointer;border-left:1px solid var(--border);color:var(--text-2)}
+.seg label:first-child{border-left:0}
+.seg label:has(input:checked){background:var(--blue);color:#fff;font-weight:600}
+.seg label:has(input:focus-visible){outline:2px solid var(--blue);outline-offset:-4px}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.drop{position:relative;display:flex;align-items:center;gap:16px;padding:20px 24px;border:2px dashed var(--border);border-radius:var(--r-field);color:var(--text-2);cursor:pointer;background:#fff}
+.drop:hover{border-color:var(--blue);color:var(--blue)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.drop:has(input:focus-visible){outline:2px solid var(--blue);outline-offset:2px}
+.drop b{display:block;color:var(--text);font-weight:600}
+.filebtn{position:relative}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.filebtn:has(input:focus-visible){outline:2px solid var(--blue);outline-offset:2px}
+.flist{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.term{border:1px solid var(--soft);border-radius:var(--r-field);background:var(--bg);padding:16px 24px;margin-bottom:24px}
+.term h3{font-size:16px;margin-bottom:12px}
+.term dl{display:grid;grid-template-columns:180px 1fr;gap:8px 16px;margin:0;font-size:15px}
+.term dt{font-weight:600}.term dd{margin:0;color:var(--text-2)}
+@media (max-width:600px){.term dl{grid-template-columns:1fr}.term dd{margin-bottom:8px}}
+
+/* ===== Cartões ===== */
+.box{background:var(--surface);border:1px solid var(--soft);border-radius:var(--r-card);padding:24px;margin-bottom:24px}
+.box-h{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:32px}
+.page-h .lab{margin-bottom:8px}
+.page-h p.t2{margin-top:8px}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+
+/* ===== Status, urgência e alertas ===== */
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:4px 14px;border-radius:999px;font-size:14px;font-weight:600;white-space:nowrap}
+.chip::before{font-weight:700}
+.c-att{background:var(--att-bg);color:var(--att)}.c-att::before{content:"•"}
+.c-info{background:var(--info-bg);color:var(--info)}.c-info::before{content:"•"}
+.c-ok{background:var(--ok-bg);color:var(--ok)}.c-ok::before{content:"✓"}
+.c-err{background:var(--err-bg);color:var(--err)}.c-err::before{content:"!"}
+.c-neu{background:var(--neu-bg);color:var(--text-2)}.c-neu::before{content:"–"}
+.ub{display:inline-flex;align-items:center;min-height:28px;padding:2px 12px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
+.ub1{background:var(--info-bg);color:var(--blue)}
+.ub2{background:var(--att-bg);color:var(--att);box-shadow:inset 0 0 0 1px var(--u2)}
+.ub3{background:var(--err);color:#fff}
+.alert{display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:var(--r-field);font-size:15px;line-height:1.5}
+.alert .ic{margin-top:2px}
+.alert b{font-weight:600}
+.a-ok{background:var(--ok-bg);color:var(--ok)}
+.a-att{background:var(--att-bg);color:var(--att)}
+.a-err{background:var(--err-bg);color:var(--err)}
+.a-info{background:var(--info-bg);color:var(--info)}
+.errsum{margin-bottom:24px;outline:0}
+.errsum ul{margin:8px 0 0;padding-left:20px}
+.errsum a{color:var(--err)}
+
+/* ===== Painel ===== */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;margin-bottom:24px;background:var(--blue-50);border-radius:var(--r-card)}
+@media (max-width:900px){.kpis{grid-template-columns:1fr 1fr}}
+.kpi{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:20px 20px 28px;border:2px solid transparent;border-radius:10px;background:transparent;cursor:pointer;color:var(--text)}
+.kpi:hover{background:rgba(255,255,255,.7)}
+.kpi[aria-pressed=true]{background:#fff;border-color:var(--blue)}
+.kpi b{font-size:17px;font-weight:600;margin-top:12px}
+.kpi small{font-size:13px;color:var(--text-2)}
+.kpi .num{font-size:40px;font-weight:700;line-height:1.1;margin-top:8px}
+.kpi::after{content:"";position:absolute;left:20px;right:20px;bottom:12px;height:4px;border-radius:2px;background:var(--bar)}
+.filters{display:flex;gap:16px 24px;flex-wrap:wrap;align-items:center;margin-bottom:32px}
+.search{position:relative;flex:1;min-width:280px}
+.search .ic{position:absolute;left:16px;top:16px;color:var(--text-2)}
+.search .inp{padding-left:48px}
+.urgf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fchip{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:14px;font-weight:600;cursor:pointer}
+.fchip:hover{border-color:var(--blue)}
+.fchip[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:#fff}
+.board{display:grid;grid-template-columns:300px minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:1050px){.board{grid-template-columns:1fr}}
+.topics{background:var(--surface);border:1px solid var(--soft);border-radius:var(--r-card);padding:16px}
+.topics summary{list-style:none;padding:8px 8px 12px}
+.topics summary::-webkit-details-marker{display:none}
+@media (max-width:1050px){.topics summary{cursor:pointer;display:flex;justify-content:space-between}.topics summary::after{content:"Mostrar";font-size:14px;color:var(--blue);font-weight:600;text-transform:none;letter-spacing:0}.topics[open] summary::after{content:"Ocultar"}}
+.topics ul{list-style:none;margin:0;padding:0}
+.tp{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;width:100%;min-height:48px;padding:12px 8px;border:0;border-top:1px solid var(--soft);background:none;text-align:left;font-size:15px;font-weight:500;line-height:1.4;cursor:pointer;color:var(--text)}
+.tp:hover{background:var(--blue-50)}
+.tp.on{color:var(--blue);font-weight:700}
+.tp .c{font-size:13px;font-weight:600;color:var(--text-2);background:var(--neu-bg);border-radius:999px;padding:1px 8px}
+.tp.sub{border-top:0;min-height:44px;padding:8px 8px 8px 28px;font-size:14px;color:var(--text-2)}
+.tp.sub::before{content:"└";margin-right:6px;color:var(--border)}
+.tp.sub span:first-child{flex:1}
+.tp.sub.on{color:var(--blue)}
+.feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
+.card{display:flex;flex-direction:column;gap:8px;padding:24px;background:var(--surface);border:1px solid #93A3D3;border-radius:var(--r-card);min-width:0}
+.card.u2{border:2px solid var(--u2)}
+.card.u3{border:2px solid var(--err);background:#FFF7F6;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(180,35,24,.35)}50%{box-shadow:0 0 0 6px rgba(180,35,24,0)}}
+@media (prefers-reduced-motion:reduce){.card.u3{animation:none}}
+.card-top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.ln{font-size:15px;color:var(--text-2)}
+.ln b{color:var(--text);font-weight:600}
+.card-f{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:8px;border-top:1px solid var(--soft)}
+.card-f .acts{display:flex;gap:24px}
+.empty{grid-column:1/-1;padding:48px 24px;text-align:center;background:var(--surface);border:1px dashed var(--border);border-radius:var(--r-card);color:var(--text-2)}
+
+/* ===== Caso ===== */
+.case-h{margin-bottom:24px}
+.case-meta{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:12px;font-size:15px;color:var(--text-2)}
+.case-meta b{color:var(--text);font-weight:600}
+.tabs{display:flex;gap:8px;border-bottom:1px solid var(--soft);margin-bottom:24px;overflow-x:auto}
+.tab{flex:none;min-height:48px;padding:0 16px;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;background:none;color:var(--text-2);font-size:16px;font-weight:500;cursor:pointer}
+.tab:hover{color:var(--text)}
+.tab[aria-selected=true]{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
+.conv{display:grid;grid-template-columns:300px minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.conv{grid-template-columns:1fr}}
+.pg{font-size:14px;font-weight:600;color:var(--text);margin:8px 0 4px}
+.plist{list-style:none;margin:0 0 16px;padding:0}
+.plist li{display:flex;gap:12px;align-items:center;padding:8px 0}
+.plist .who2{flex:1;min-width:0}
+.plist .who2 b{display:block;font-size:15px;font-weight:600}
+.plist .who2 span{display:block;font-size:13px;color:var(--text-2)}
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;flex:none}
+.av-as{background:var(--blue)}.av-hab{background:var(--teal)}.av-sau{background:#6F3D86}.av-edu{background:var(--att)}
+.msgs{display:flex;flex-direction:column;gap:24px;min-height:340px;max-height:560px;overflow:auto;padding:24px}
+.msg{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px}
+.msg-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:14px;margin-bottom:6px}
+.msg-h b{font-weight:600;color:var(--text)}
+.msg-h span{color:var(--text-2)}
+.msg-h time{margin-left:auto;color:var(--text-2);font-size:13px}
+.bubble{background:var(--bg);border:1px solid var(--soft);border-radius:4px 12px 12px 12px;padding:12px 16px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.me .bubble{background:var(--blue-50);border-color:var(--blue-100)}
+.att{display:inline-flex;align-items:center;gap:8px;margin:8px 8px 0 0;padding:8px 12px;border:1px solid var(--soft);border-radius:var(--r-field);background:#fff;font-size:14px;color:var(--text);white-space:normal}
+.att small{color:var(--text-2)}
+.evt{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-2);text-align:center}
+.evt::before,.evt::after{content:"";flex:1;height:1px;background:var(--soft)}
+.composer{border-top:1px solid var(--soft);padding:24px}
+.composer-f{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:16px}
+.actionbar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:24px;padding:24px;background:var(--surface);border:1px solid var(--soft);border-radius:var(--r-card)}
+
+/* ===== Linha do tempo ===== */
+.steps{list-style:none;margin:0;padding:8px 0 0;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.step{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center}
+.step::before{content:"";position:absolute;top:19px;left:calc(-50% + 28px);right:calc(50% + 28px);height:2px;background:var(--soft)}
+.step:first-child::before{display:none}
+.step.done::before,.step.cur::before{background:var(--blue)}
+.node{position:relative;z-index:1;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--border);background:#fff;color:var(--text-2);font-weight:700}
+.done .node{background:var(--blue);border-color:var(--blue);color:#fff}
+.cur .node{background:var(--blue-50);border-color:var(--blue);color:var(--blue);box-shadow:0 0 0 4px var(--blue-100)}
+.step div{display:flex;flex-direction:column;align-items:inherit}
+.step b{font-size:15px;font-weight:700;margin-top:12px}
+.step span{font-size:14px;color:var(--text-2)}
+.cur b,.cur span{color:var(--blue)}
+.step .nm{color:var(--text);font-weight:500;line-height:1.35;margin:2px 0}
+.cur .nm{color:var(--blue);font-weight:700}
+.aceite{margin-top:24px;padding-top:16px;border-top:1px solid var(--soft);font-size:14px;color:var(--text-2);text-align:center}
+@media (max-width:760px){
+  .steps{grid-template-columns:1fr;gap:16px}
+  .step{flex-direction:row;gap:16px;text-align:left}
+  .step::before{display:none}
+  .step b{margin:0}
+}
+.tl{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+@media (max-width:1050px){.tl{grid-template-columns:1fr}}
+.next{border-left:4px solid var(--blue)}
+.next p{color:var(--text-2);margin-top:4px}
+.next .actions{margin-top:16px}
+.drow{display:grid;grid-template-columns:40px minmax(0,1fr) 200px;gap:16px;align-items:center;padding:16px 0;border-top:1px solid var(--soft)}
+.drow b{display:block;font-weight:600}
+.drow .t2{font-size:14px}
+.drow .st{justify-self:end}
+.drow select.inp{min-height:44px;font-size:15px}
+.drow .why{grid-column:2/-1;font-size:14px;color:var(--text-2);margin-top:-8px}
+@media (max-width:600px){.drow{grid-template-columns:40px 1fr}.drow .st{grid-column:2;justify-self:start}}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{position:relative;padding:0 0 20px 28px}
+.hist li::before{content:"";position:absolute;left:0;top:6px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--blue)}
+.hist li::after{content:"";position:absolute;left:7px;top:22px;bottom:2px;width:2px;background:var(--soft)}
+.hist li:last-child{padding-bottom:0}
+.hist li:last-child::after{display:none}
+.hist li:first-child::before{background:var(--blue)}
+.hist time{display:block;font-size:13px;color:var(--text-2)}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:12px 16px;margin:0;font-size:15px}
+.kv dt{color:var(--text-2)}.kv dd{margin:0;min-width:0}
+.kv .chip{white-space:normal}
+.priv{border:2px dashed var(--blue)}
+.divider{height:1px;background:var(--soft);margin:24px 0}
+
+/* ===== Comprovante ===== */
+.doc{max-width:860px;margin:0 auto;padding:48px;background:#fff;border:1px solid var(--soft);border-radius:var(--r-card)}
+@media (max-width:700px){.doc{padding:24px 16px}}
+.doc-h{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;padding-bottom:24px;margin-bottom:32px;border-bottom:2px solid var(--blue)}
+.doc-brand{display:flex;gap:12px;align-items:center}
+.doc-brand b{display:block;font-size:18px;color:var(--blue)}
+.doc-brand span{display:block;font-size:13px;color:var(--text-2)}
+.doc-h .r{text-align:right}
+.doc h1{font-size:24px;margin-bottom:8px}
+.doc h2{font-size:14px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin:32px 0 12px}
+.dkv{display:grid;grid-template-columns:220px 1fr;margin:0;border-top:1px solid var(--soft)}
+.dkv dt,.dkv dd{margin:0;padding:12px 0;border-bottom:1px solid var(--soft);font-size:15px}
+.dkv dt{color:var(--text-2)}
+.dkv .hash{font-family:ui-monospace,Consolas,monospace;font-size:13px;word-break:break-all}
+@media (max-width:600px){.dkv{grid-template-columns:1fr}.dkv dt{border:0;padding-bottom:0}}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{text-align:left;font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;padding:8px 12px 8px 0;border-bottom:1px solid var(--border)}
+td{padding:12px 12px 12px 0;border-bottom:1px solid var(--soft);vertical-align:top}
+td small{display:block;color:var(--text-2);font-size:14px}
+.doc-foot{display:flex;gap:16px;flex-wrap:wrap;margin-top:40px;padding-top:24px;border-top:1px solid var(--soft)}
+.doc-top{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:24px;align-items:start}
+@media (max-width:700px){.doc-top{grid-template-columns:1fr}}
+.urgbox{border:2px solid var(--err);border-radius:var(--r-card);padding:16px;text-align:center;background:var(--err-bg);color:var(--err);margin-top:44px}
+.urgbox small{display:block;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.urgbox b{display:block;font-size:20px;margin-top:4px}
+.verif{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;margin-top:24px;padding:16px 24px;border:2px dashed var(--border);border-radius:var(--r-card)}
+.verif .code{font-family:ui-monospace,Consolas,monospace;font-size:24px;font-weight:700;color:var(--blue);letter-spacing:.08em}
+@media (max-width:600px){.verif{grid-template-columns:1fr}}
+
+/* ===== Barra do caso (lo-fi Telas 4, 5 e 6) ===== */
+.casebar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 0;padding:12px 16px;background:#fff;border:1px solid var(--soft);border-radius:var(--r-field);font-size:15px;margin-top:16px}
+.casebar>span{padding:0 16px;border-left:1px solid var(--soft)}
+.casebar>span:first-child{padding-left:0;border-left:0}
+.casebar b{font-weight:600}
+.casebar .urg3{border:2px solid var(--err);border-radius:6px;padding:4px 12px;color:var(--err);font-weight:700;margin-left:16px}
+.casebar .urg2{border:2px solid var(--u2);border-radius:6px;padding:4px 12px;color:var(--att);font-weight:700;margin-left:16px}
+.casebar .urg1{border:1px solid var(--blue);border-radius:6px;padding:4px 12px;color:var(--blue);font-weight:600;margin-left:16px}
+@media (max-width:700px){.casebar{flex-direction:column;align-items:flex-start;gap:8px}.casebar>span{padding:0;border-left:0}.casebar .urg1,.casebar .urg2,.casebar .urg3{margin-left:0}}
+.stamp{display:flex;gap:12px;align-items:center;padding:16px 20px;border:2px solid var(--ok);border-radius:var(--r-field);background:var(--ok-bg);color:var(--ok);font-size:16px;margin-bottom:24px}
+.stamp b{font-weight:700}
+
+/* ===== Entregas em cartões (lo-fi Tela 5) ===== */
+.ents{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:8px}
+.ent{border:1px solid var(--soft);border-left:6px solid var(--border);border-radius:var(--r-field);padding:16px;background:#fff}
+.ent.s-ok{border-left-color:var(--ok)}.ent.s-info{border-left-color:var(--blue)}.ent.s-att{border-left-color:var(--u2)}.ent.s-err{border-left-color:var(--err)}
+.ent b{display:block;font-weight:600}
+.ent .t2{font-size:14px;display:block;margin:4px 0 12px}
+.ent .why{font-size:14px;color:var(--text-2);margin-top:8px}
+.tlbar{display:flex;justify-content:flex-end;gap:16px;flex-wrap:wrap;padding:24px;background:var(--surface);border:1px solid var(--soft);border-radius:var(--r-card)}
+.tlbar .t2{margin-right:auto;align-self:center;font-size:15px}
+
+/* ===== Busca do cidadão (lo-fi Tela 3) ===== */
+.sug{list-style:none;margin:8px 0 0;padding:0;border:1px solid var(--soft);border-radius:var(--r-field);background:#fff;overflow:hidden}
+.sug button{display:flex;justify-content:space-between;gap:16px;width:100%;min-height:48px;padding:8px 16px;border:0;border-top:1px solid var(--soft);background:#fff;text-align:left;cursor:pointer}
+.sug li:first-child button{border-top:0}
+.sug button:hover,.sug button:focus-visible{background:var(--blue-50)}
+.sug .t2{font-size:14px}
+
+/* ===== Camadas ===== */
+dialog{border:0;border-radius:var(--r-card);padding:0;width:min(560px,calc(100% - 32px));box-shadow:0 20px 48px rgba(31,41,55,.28);color:var(--text)}
+dialog::backdrop{background:rgba(31,41,55,.55)}
+.dlg-b{padding:32px 32px 24px}
+.dlg-b h2{margin-bottom:12px}
+.dlg-b p,.dlg-b li{color:var(--text-2)}
+.dlg-b ul{padding-left:20px;margin:12px 0}
+.dlg-f{display:flex;justify-content:flex-end;gap:16px;flex-wrap:wrap;padding:24px 32px;border-top:1px solid var(--soft)}
+#toast{position:fixed;right:24px;bottom:24px;z-index:50;max-width:min(440px,calc(100% - 48px));box-shadow:0 8px 24px rgba(31,41,55,.18);border:1px solid #B5D9C0;transform:translateY(12px);opacity:0;pointer-events:none;transition:.2s ease}
+#toast.on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+@media print{
+  .side,.top,.tabs,.case-h,.doc-foot{display:none!important}
+  body,.app{background:#fff}.app{display:block}main{padding:0}
+  .doc{border:0;padding:0;max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <button class="logo" onclick="go('painel')" aria-label="SeConecta, ir para o painel geral">
+      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#fff" fill-opacity=".14"/><rect x="6" y="14" width="17" height="12" rx="6" fill="none" stroke="#fff" stroke-width="3"/><rect x="17" y="14" width="17" height="12" rx="6" fill="none" stroke="#9FD6D3" stroke-width="3"/><path d="M18.6 14.6a6 6 0 0 1 4 3.6" fill="none" stroke="#fff" stroke-width="3"/></svg>
+      <div><b>SeConecta</b><span>Sistema de solicitações intersecretariais</span></div>
+    </button>
+    <nav class="nav" id="nav" aria-label="Principal"></nav>
+    <div class="side-foot"><p>Protótipo v1 · dados fictícios, sem servidor</p></div>
+  </aside>
+  <div>
+    <header class="top">
+      <nav class="crumbs" id="crumbs" aria-label="Você está em"></nav>
+      <div class="who">
+        <div><label for="viewer">Perfil de demonstração</label>
+          <select id="viewer" onchange="setViewer(this.value)">
+            <option value="as">Assistência Social</option>
+            <option value="hab">Habitação</option>
+            <option value="sau">Saúde</option>
+            <option value="edu">Educação</option>
+          </select></div>
+        <div class="user" id="user"></div>
+      </div>
+    </header>
+    <main id="main" tabindex="-1"></main>
+  </div>
+</div>
+<div id="toast" class="alert a-ok" role="status" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+/* ===== Utilidades ===== */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const fmt=(d=new Date())=>`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} às ${pad(d.getHours())}:${pad(d.getMinutes())}h`;
+const hora=s=>(s.split(' às ')[1]||'');
+const dia=s=>s.split(' às ')[0];
+const lista=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' e '+a[a.length-1];
+const kb=n=>n>1048576?(n/1048576).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(n/1024))+' KB';
+const idade=iso=>{const b=new Date(iso+'T12:00'),n=new Date();let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a};
+
+const P={
+  grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+  filePlus:'<path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4M12 11v6M9 14h6"/>',
+  userPlus:'<circle cx="10" cy="8" r="3.6"/><path d="M3.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M19 8v6M16 11h6"/>',
+  msg:'<path d="M4 5.5h16v10.5H10l-6 4.5z"/><path d="M8 10h8M8 13h5"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.1"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.3 2"/>',
+  checkCircle:'<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.8L16.2 9.6"/>',
+  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  clip:'<path d="m20.5 11.2-8.3 8.3a5 5 0 0 1-7.1-7.1l8.3-8.3a3.4 3.4 0 0 1 4.8 4.8l-8.3 8.3a1.7 1.7 0 0 1-2.4-2.4l7.6-7.6"/>',
+  upload:'<path d="M12 16V4M7 9l5-5 5 5M4 16v3.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V16"/>',
+  file:'<path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4"/>',
+  lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/>',
+  alert:'<path d="M10.3 4.2 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4.5M12 17.2v.1"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.1"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  send:'<path d="M21 3 10 14M21 3l-6.5 18-4.5-7-7-4.5z"/>',
+  download:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'
+};
+const ic=(n,s=20)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+
+/* ===== Domínio ===== */
+const SECS={
+  as:{nome:'Assistência Social',sig:'AS',resp:'Alessandra Moura',cargo:'Assistente Social'},
+  hab:{nome:'Habitação',sig:'HB',resp:'Rafael Lima',cargo:'Técnico de habitação'},
+  sau:{nome:'Saúde',sig:'SA',resp:'Camila Torres',cargo:'Enfermeira · Atenção Básica'},
+  edu:{nome:'Educação',sig:'ED',resp:'Marcos Paiva',cargo:'Coordenador pedagógico'}
+};
+const TOPICS=[
+ {n:'Subsistência e benefícios imediatos',subs:[['Benefícios eventuais','auxílio-funeral, auxílio-natalidade, aluguel social'],['Segurança alimentar e nutricional','cestas básicas, restaurantes populares'],['Programas de transferência de renda','CadÚnico, Bolsa Família, BPC'],['Doações emergenciais de itens básicos','roupas, cobertores, kits de higiene']]},
+ {n:'Proteção especial contra violência e violação de direitos',subs:[['Violência doméstica e de gênero',''],['Violações contra infância e juventude','abuso, exploração, negligência grave'],['Maus-tratos contra pessoas idosas e pessoas com deficiência',''],['Enfrentamento ao trabalho infantil e trabalho análogo à escravidão','']]},
+ {n:'População em situação de rua e desabrigo crítico',subs:[['Abordagem social de rua e busca ativa',''],['Acolhimento institucional transitório','albergues, repúblicas, casas de passagem'],['Serviços de higiene pessoal e convivência diurna','Centros POP'],['Gestão de abrigos temporários em desastres e calamidades','']]},
+ {n:'Autonomia, capacitação e inclusão produtiva',subs:[['Cursos de qualificação e formação profissional',''],['Intermediação de mão de obra e fomento a cooperativas',''],['Oficinas de educação financeira e economia solidária',''],['Inclusão digital e acesso comunitário à tecnologia','']]},
+ {n:'Cidadania básica, documentação e regularização civil',subs:[['Emissão e 2ª via de registro civil','nascimento, casamento, óbito'],['Emissão de documentos de identificação pessoal','RG, CPF, Carteira de Trabalho'],['Regularização documental para migrantes e refugiados',''],['Emissão de certidões de isenção de taxas cartorárias','']]}
+];
+const ETAPAS=['Abertura e instanciação','Articulação e adesão formal (aceite)','Execução e respostas','Devolutiva e entrega','Desfecho / encerramento'];
+const URG_NOME={1:'Baixa',2:'Média',3:'Máxima'};
+const urgLabel=u=>u===3?'Urgência 3 – Máxima':`Urgência ${u}`;
+const urgNivel=u=>['','Nível 1 (Baixa)','Nível 2 (Média)','Nível 3 (Máxima)'][u];
+const STATUS={wait:['Aguardando apoio','c-att'],proc:['Em processo','c-info'],done:['Encerrado','c-ok']};
+const ENT={'Aguardando':'c-att','Em execução':'c-info','Concluída':'c-ok','Inviabilizada':'c-err','Desvinculada':'c-err','Dispensada':'c-neu'};
+const RESOLV=['Concluída','Inviabilizada','Desvinculada','Dispensada'];
+const CHECKS=['Contato com a família verificado','Documentos do cidadão conferidos','Retorno ao cidadão agendado'];
+const KPI=[['abertos','Chats abertos','msg','#B5600C'],['sem','Sem ajuda oferecida','help','#B42318'],['proc','Em processo','clock','#243F8F'],['done','Encerrado','checkCircle','#207245']];
+
+function ini(nome){const p=nome.trim().split(/\s+/).filter(w=>!/^(da|de|do|das|dos|e)$/i.test(w));return p.length>1?`${p[0][0]}.${p[p.length-1][0]}.`.toUpperCase():`${p[0][0].toUpperCase()}.`}
+const cid=(id,nome,raw,nasc,consent)=>({id,nome,raw,nasc,consent,ini:ini(nome),excecao:''});
+const cpfMask=raw=>`***.${raw.slice(3,6)}.***-${raw.slice(9)}`;
+
+let S={
+  viewer:'as', route:{name:'painel'}, f:{q:'',st:null,urg:0,topic:null,sub:null},
+  seq:9412, files:[], cfiles:[], draft:null,
+  cidadaos:[
+    cid('z1','Maria Souza','12345678901','1988-06-02',true),
+    cid('z2','Pedro Oliveira','23456789012','1979-11-20',true),
+    cid('z3','Ana Costa','34567890123','1996-03-14',true),
+    cid('z4','José Ferreira','45678901234','1949-08-09',true),
+    cid('z5','Rita Barbosa','56789012345','1971-01-27',true)
+  ],
+  cases:[]
+};
+function seed(){
+  const b=o=>Object.assign({solicitante:'as',sigilo:'geral',env:{},aptas:[],compromissos:[],checks:[false,false,false],notas:'',entrega:'',desfecho:'',justUrg:'',msgs:[],log:[],trava:{saude:false,assist:false}},o);
+  const N=sol=>notifTxt({solicitante:sol});
+  S.cases=[
+    b({id:'c9401',n:9401,cid:'z1',topico:1,sub:'Violência doméstica e de gênero',urg:2,sigilo:'restrito',status:'wait',etapa:1,criado:'31/10/2026 às 09:40h',entregueEm:'31/10/2026 às 09:41h',env:{sau:'ativo'},trava:{saude:true,assist:true},
+      resumo:'Usuária relata ameaças do ex-companheiro e dores após agressão na semana passada. Solicitamos avaliação de saúde e acompanhamento pela equipe da UBS.',
+      msgs:[{de:'as',txt:'Usuária relata ameaças do ex-companheiro e dores após agressão na semana passada. Solicitamos avaliação de saúde e acompanhamento pela equipe da UBS.',hora:'31/10/2026 às 09:41h',anexos:[]},{evt:true,txt:'Saúde passou a participar ativamente',hora:'31/10/2026 às 10:05h'}],
+      log:[{t:'31/10/2026 às 09:40h',txt:'Demanda aberta pela Assistência Social'},{t:'31/10/2026 às 09:41h',txt:N('as')},{t:'31/10/2026 às 10:05h',txt:'Saúde passou a participar ativamente'}]}),
+    b({id:'c9398',n:9398,cid:'z5',topico:2,sub:'Abordagem social de rua e busca ativa',urg:1,status:'wait',etapa:2,criado:'30/10/2026 às 16:05h',entregueEm:'30/10/2026 às 16:06h',env:{hab:'ativo',sau:'passivo'},
+      resumo:'Usuária em situação de rua há dois meses, próxima à feira. Aceitou atendimento e quer avaliar o aluguel social.',
+      msgs:[{de:'as',txt:'Usuária em situação de rua há dois meses, próxima à feira. Aceitou atendimento e quer avaliar o aluguel social.',hora:'30/10/2026 às 16:06h',anexos:[]},
+            {evt:true,txt:'Habitação passou a participar ativamente',hora:'30/10/2026 às 17:10h'},
+            {de:'hab',txt:'Podemos incluir na triagem do aluguel social na próxima terça. Preciso do comprovante de inscrição no CadÚnico.',hora:'30/10/2026 às 17:22h',anexos:[]},
+            {evt:true,txt:'Habitação declarou-se apta a ajudar',hora:'30/10/2026 às 17:22h'}],
+      aptas:['hab'],compromissos:[{sec:'hab',titulo:'Triagem para aluguel social',status:'Aguardando',just:''}],
+      log:[{t:'30/10/2026 às 16:05h',txt:'Demanda aberta pela Assistência Social'},{t:'30/10/2026 às 16:06h',txt:N('as')},{t:'30/10/2026 às 16:30h',txt:'Saúde visualizou a demanda e acompanha em modo passivo'},{t:'30/10/2026 às 17:10h',txt:'Habitação passou a participar ativamente'},{t:'30/10/2026 às 17:22h',txt:'Habitação declarou-se apta a ajudar'}]}),
+    b({id:'c9377',n:9377,cid:'z4',topico:1,sub:'Maus-tratos contra pessoas idosas e pessoas com deficiência',urg:2,status:'proc',etapa:3,criado:'24/10/2026 às 10:30h',entregueEm:'24/10/2026 às 10:31h',aceiteEm:'24/10/2026 às 15:10h',env:{sau:'ativo',hab:'passivo'},trava:{saude:false,assist:true},
+      resumo:'Idoso de 77 anos morando sozinho, com sinais de negligência relatados por vizinhos.',
+      msgs:[{de:'as',txt:'Idoso de 77 anos morando sozinho, com sinais de negligência relatados por vizinhos. Pedimos visita domiciliar da equipe de saúde.',hora:'24/10/2026 às 10:31h',anexos:[]},{evt:true,txt:'Saúde passou a participar ativamente',hora:'24/10/2026 às 13:50h'},{de:'sau',txt:'A agente comunitária da área faz a visita com a enfermeira na segunda.',hora:'24/10/2026 às 14:02h',anexos:[]},{evt:true,txt:'Saúde declarou-se apta a ajudar',hora:'24/10/2026 às 14:02h'},{evt:true,txt:'Aceite confirmado: processo iniciado',hora:'24/10/2026 às 15:10h'},{de:'as',txt:'A visita atrasou? Precisamos saber se a equipe já esteve na casa.',hora:'27/10/2026 às 09:20h',anexos:[]},{de:'sau',txt:'A visita foi feita hoje cedo. O relatório sai até amanhã.',hora:'27/10/2026 às 11:40h',anexos:[]}],
+      aptas:['sau'],compromissos:[{sec:'sau',titulo:'Visita domiciliar e avaliação clínica',status:'Em execução',just:''}],checks:[true,false,false],
+      log:[{t:'24/10/2026 às 10:30h',txt:'Demanda aberta pela Assistência Social'},{t:'24/10/2026 às 10:31h',txt:N('as')},{t:'24/10/2026 às 13:50h',txt:'Saúde passou a participar ativamente'},{t:'24/10/2026 às 14:02h',txt:'Saúde declarou-se apta a ajudar'},{t:'24/10/2026 às 15:10h',txt:'Aceite confirmado; processo iniciado'},{t:'27/10/2026 às 11:40h',txt:'Saúde: entrega em execução'}]}),
+    b({id:'c9350',n:9350,solicitante:'edu',cid:'z2',topico:4,sub:'Emissão e 2ª via de registro civil',urg:1,status:'proc',etapa:3,criado:'20/10/2026 às 14:12h',entregueEm:'20/10/2026 às 14:13h',aceiteEm:'21/10/2026 às 10:05h',env:{as:'ativo'},
+      resumo:'Pai de duas crianças sem certidão de nascimento da filha mais nova, o que impede a matrícula escolar.',
+      msgs:[{de:'edu',txt:'Pai de duas crianças sem certidão de nascimento da filha mais nova, o que impede a matrícula. Pedimos apoio para a emissão da 2ª via, com isenção de taxa.',hora:'20/10/2026 às 14:13h',anexos:[]},{evt:true,txt:'Assistência Social passou a participar ativamente',hora:'20/10/2026 às 15:30h'},{de:'as',txt:'Fazemos o encaminhamento ao cartório com a certidão de isenção de taxa ainda esta semana.',hora:'20/10/2026 às 16:40h',anexos:[]},{evt:true,txt:'Assistência Social declarou-se apta a ajudar',hora:'20/10/2026 às 16:40h'},{evt:true,txt:'Aceite confirmado: processo iniciado',hora:'21/10/2026 às 10:05h'}],
+      aptas:['as'],compromissos:[{sec:'as',titulo:'Encaminhamento ao cartório com isenção de taxa',status:'Em execução',just:''}],checks:[true,false,false],
+      log:[{t:'20/10/2026 às 14:12h',txt:'Demanda aberta pela Educação'},{t:'20/10/2026 às 14:13h',txt:N('edu')},{t:'20/10/2026 às 15:30h',txt:'Assistência Social passou a participar ativamente'},{t:'20/10/2026 às 16:40h',txt:'Assistência Social declarou-se apta a ajudar'},{t:'21/10/2026 às 10:05h',txt:'Aceite confirmado; processo iniciado'},{t:'22/10/2026 às 09:15h',txt:'Assistência Social: entrega em execução'}]}),
+    b({id:'c9312',n:9312,cid:'z3',topico:3,sub:'Cursos de qualificação e formação profissional',urg:1,status:'done',etapa:5,criado:'02/10/2026 às 14:00h',entregueEm:'02/10/2026 às 14:01h',aceiteEm:'05/10/2026 às 10:00h',encerradoEm:'16/10/2026 às 16:20h',env:{edu:'ativo'},
+      resumo:'Vaga em curso de qualificação profissional.',desfecho:'Atendido integralmente',entrega:'Comprovante de matrícula entregue à usuária no CRAS em 15/10/2026.',
+      msgs:[{de:'as',txt:'Usuária quer uma vaga em curso de qualificação profissional para voltar ao mercado de trabalho.',hora:'02/10/2026 às 14:01h',anexos:[]},{evt:true,txt:'Educação passou a participar ativamente',hora:'02/10/2026 às 15:20h'},{de:'edu',txt:'Há vaga no curso de auxiliar administrativo. Fazemos a matrícula.',hora:'02/10/2026 às 15:45h',anexos:[]},{evt:true,txt:'Educação declarou-se apta a ajudar',hora:'02/10/2026 às 15:45h'},{evt:true,txt:'Aceite confirmado: processo iniciado',hora:'05/10/2026 às 10:00h'},{evt:true,txt:'Caso encerrado: chat bloqueado, histórico mantido',hora:'16/10/2026 às 16:20h'}],
+      aptas:['edu'],compromissos:[{sec:'edu',titulo:'Matrícula no curso de auxiliar administrativo',status:'Concluída',just:''}],checks:[true,true,true],
+      log:[{t:'02/10/2026 às 14:00h',txt:'Demanda aberta pela Assistência Social'},{t:'02/10/2026 às 14:01h',txt:N('as')},{t:'02/10/2026 às 15:20h',txt:'Educação passou a participar ativamente'},{t:'05/10/2026 às 10:00h',txt:'Aceite confirmado; processo iniciado'},{t:'14/10/2026 às 11:30h',txt:'Educação: entrega concluída'},{t:'15/10/2026 às 09:00h',txt:'Devolutiva ao cidadão registrada'},{t:'16/10/2026 às 16:20h',txt:'Caso encerrado: atendido integralmente'}]})
+  ];
+}
+const C=id=>S.cases.find(c=>c.id===id);
+const CID=id=>S.cidadaos.find(c=>c.id===id);
+const prot=c=>`2026-CAD-${String(c.n).padStart(5,'0')}`;
+const parcs=c=>Object.keys(SECS).filter(k=>k!==c.solicitante);
+const stEnv=(c,k)=>c.env[k]||'nao';
+const ativos=c=>parcs(c).filter(k=>stEnv(c,k)==='ativo');
+const passivos=c=>parcs(c).filter(k=>stEnv(c,k)==='passivo');
+const naoVistas=c=>parcs(c).filter(k=>stEnv(c,k)==='nao');
+const visiveis=()=>S.cases;
+const notifTxt=c=>`Notificação entregue às demais secretarias: ${lista(parcs(c).map(k=>SECS[k].nome))}`;
+const etapaEf=c=>c.status==='done'?6:c.status==='wait'?(c.aptas.length?2:1):c.etapa;
+const ub=u=>`<span class="ub ub${u}">${urgLabel(u)}</span>`;
+const stChip=s=>`<span class="chip ${STATUS[s][1]}">${STATUS[s][0]}</span>`;
+const av=s=>`<span class="av av-${s}" aria-hidden="true">${SECS[s].sig}</span>`;
+const logPush=(c,txt)=>c.log.push({t:fmt(),txt});
+
+async function sha(s){
+  try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+  catch(e){let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0}let o='';for(let i=0;i<8;i++){h=Math.imul(h^(h>>>13),2246822507)>>>0;o+=h.toString(16).padStart(8,'0')}return o}
+}
+const hashOf=c=>sha(JSON.stringify({p:prot(c),u:c.urg,s:c.sub,d:c.desfecho,k:c.compromissos,l:c.log}));
+
+function toast(t){const e=$('#toast');e.innerHTML=ic('checkCircle')+`<span><b>${esc(t)}</b></span>`;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('on'),3400)}
+function ask(o,cb){
+  const d=$('#dlg');
+  d.innerHTML=`<div class="dlg-b"><h2 id="dlgt">${esc(o.title)}</h2><div>${o.html||''}</div>${o.field?`<div class="field" style="margin-top:24px"><label class="lbl" for="dlgin">${esc(o.field)} *</label><textarea class="inp" id="dlgin" rows="3"></textarea></div>`:''}</div>
+  <div class="dlg-f"><button type="button" class="btn btn-secondary" id="dlgc">Voltar</button><button type="button" class="btn ${o.danger?'btn-danger':'btn-primary'}" id="dlgok">${esc(o.ok||'Confirmar')}</button></div>`;
+  d.setAttribute('aria-labelledby','dlgt');
+  d.oncancel=()=>render();
+  d.showModal();
+  $('#dlgc').onclick=()=>{d.close();render()};
+  $('#dlgok').onclick=()=>{
+    let v='';
+    if(o.field){v=$('#dlgin').value.trim();if(!v){const f=$('#dlgin').closest('.field');f.classList.add('invalid');if(!f.querySelector('.ferr'))f.insertAdjacentHTML('beforeend','<p class="ferr">Erro: preencha este campo antes de continuar.</p>');$('#dlgin').focus();return}}
+    d.close();cb(v);
+  };
+}
+function showErrors(list){
+  $$('.invalid').forEach(e=>e.classList.remove('invalid'));$$('.ferr').forEach(e=>e.remove());
+  const box=$('#errsum');
+  if(!list.length){box.hidden=true;return false}
+  box.hidden=false;
+  box.innerHTML=`${ic('alert')}<div><b>${list.length===1?'Falta 1 item para continuar':`Faltam ${list.length} itens para continuar`}</b><ul>${list.map(e=>`<li><a href="#${e.id}">${esc(e.msg)}</a></li>`).join('')}</ul></div>`;
+  list.forEach(e=>{const el=document.getElementById(e.id);if(!el)return;const f=el.closest('.field')||el;f.classList.add('invalid');f.insertAdjacentHTML('beforeend',`<p class="ferr">Erro: ${esc(e.msg.charAt(0).toLowerCase()+e.msg.slice(1))}</p>`)});
+  box.focus();box.scrollIntoView({block:'start',behavior:'smooth'});return true;
+}
+
+/* ===== Navegação ===== */
+function go(name,id){
+  if(name==='caso'){const c=C(id);name=c.status==='wait'?'chat':'timeline'}
+  S.route={name,id};render();window.scrollTo(0,0);$('#main').focus({preventScroll:true});
+}
+function setViewer(v){S.viewer=v;render()}
+function shell(){
+  const v=S.viewer,r=S.route.name,cur=['chat','timeline','comprovante'].includes(r)?'painel':r;
+  const items=[['painel','Painel geral','grid']].concat([['demanda','Nova demanda','filePlus'],['cadastro','Novo cadastro','userPlus']]);
+  $('#nav').innerHTML=items.map(([k,t,i])=>`<button class="navi" ${cur===k?'aria-current="page"':''} onclick="${k==='demanda'?'S.draft=null;':''}go('${k}')">${ic(i,22)}<span>${t}</span></button>`).join('');
+  $('#user').innerHTML=`${av(v)}<div><b>Olá, ${SECS[v].resp.split(' ')[0]}</b><span>${SECS[v].cargo}</span></div>`;
+  $('#viewer').value=v;
+  const c=S.route.id&&C(S.route.id);
+  const home=`<span>Acesso</span><i>›</i><button onclick="go('painel')">Painel geral</button><i>›</i>`;
+  const map={painel:'<span>Acesso</span><i>›</i><strong>Painel geral</strong>',cadastro:`${home}<strong>Novo cadastro</strong>`,demanda:`${home}<strong>Abertura de demanda</strong>`};
+  if(c){const t={chat:`Chat ${esc(CID(c.cid).ini)}`,timeline:'Timeline',comprovante:'Comprovante'}[r];map[r]=`${home}<strong>${t}</strong>`}
+  $('#crumbs').innerHTML=map[r]||'';
+  document.title=`${({painel:'Painel geral',cadastro:'Novo cadastro',demanda:'Abertura de demanda',chat:'Chat da instância',timeline:'Linha do tempo',comprovante:'Comprovante'})[r]} · SeConecta`;
+}
+function render(){
+  const r=S.route;
+  if(r.id&&!C(r.id)){S.route={name:'painel'};return render()}
+  if(r.name==='chat')marcaVista(C(r.id));
+  shell();
+  const views={painel:vPainel,cadastro:vCadastro,demanda:vDemanda,chat:()=>vChat(C(r.id)),timeline:()=>vTimeline(C(r.id)),comprovante:()=>vComp(C(r.id))};
+  $('#main').innerHTML=views[r.name]();
+  if(r.name==='demanda')initDemanda();
+  if(r.name==='chat'){const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight}
+}
+
+/* ===== Tela 2: Painel geral ===== */
+function grupos(base){return {abertos:base.filter(c=>c.status==='wait'),sem:base.filter(c=>c.status==='wait'&&!c.aptas.length),proc:base.filter(c=>c.status==='proc'),done:base.filter(c=>c.status==='done')}}
+function filtrados(){
+  const f=S.f,q=f.q.trim().toLowerCase(),base=visiveis(),g=grupos(base);
+  const list=(f.st?g[f.st]:base).filter(c=>{
+    if(f.topic!==null&&c.topico!==f.topic)return false;
+    if(f.sub&&c.sub!==f.sub)return false;
+    if(f.urg&&c.urg!==f.urg)return false;
+    if(q&&!`${CID(c.cid).ini} ${prot(c)} ${c.sub} ${TOPICS[c.topico].n} ${c.resumo} ${ativos(c).map(s=>SECS[s].nome).join(' ')}`.toLowerCase().includes(q))return false;
+    return true;
+  }).sort((a,b)=>b.urg-a.urg||b.n-a.n);
+  return {base,g,list};
+}
+function cardHTML(c){
+  const z=CID(c.cid),at=ativos(c),fechado=c.status==='done';
+  const flag=c.status!=='wait'?'':c.aptas.length?`<p class="ln" style="color:var(--ok);font-weight:600">${c.aptas.length} ${c.aptas.length>1?'secretarias aptas':'secretaria apta'}</p>`:'<p class="ln" style="color:var(--att);font-weight:600">Nenhuma secretaria ofereceu ajuda ainda</p>';
+  return `<article class="card u${c.urg}">
+    <div class="card-top">${ub(c.urg)}${stChip(c.status)}</div>
+    <h3>${esc(z.ini)} | Cidadão assistido</h3>
+    <p class="ln"><b>Subtópico:</b> ${esc(c.sub)}</p>
+    <p class="ln"><b>Secretaria solicitante:</b> ${SECS[c.solicitante].nome}</p>
+    <p class="ln"><b>Participando:</b> ${at.length?at.map(s=>SECS[s].nome).join(', '):'nenhuma ainda'}</p>
+    <p class="ln"><b>Data:</b> ${esc(c.criado)}</p>
+    ${flag}
+    <div class="card-f"><span class="mono sm t2">#${prot(c)}</span><div class="acts"><button class="lnk" onclick="go('timeline','${c.id}')">Ver detalhes</button><button class="lnk teal" onclick="go('chat','${c.id}')">${fechado?'Ver histórico do chat':'Entrar no chat'}</button></div></div>
+  </article>`;
+}
+const temFiltro=()=>S.f.st||S.f.urg||S.f.topic!==null||S.f.q.trim();
+function setSt(k){S.f.st=S.f.st===k?null:k;render()}
+function setUrg(u){S.f.urg=S.f.urg===u?0:u;render()}
+function setTopic(i){if(S.f.topic===i&&!S.f.sub)S.f.topic=null;else S.f.topic=i;S.f.sub=null;render()}
+function setSub(i,j){const s=TOPICS[i].subs[j][0];S.f.topic=i;S.f.sub=S.f.sub===s?null:s;render()}
+function limpar(){S.f={q:'',st:null,urg:0,topic:null,sub:null};render()}
+function feedHead(n){return `<span class="sm t2" id="fcount">${n} ${n===1?'demanda':'demandas'} · maior urgência primeiro</span>`}
+function updFeed(){const {list}=filtrados();$('#feed').innerHTML=list.length?list.map(cardHTML).join(''):emptyHTML();$('#fcount').outerHTML=feedHead(list.length)}
+const emptyHTML=()=>`<div class="empty"><p><b>Nenhuma demanda com esses filtros.</b></p><button class="lnk" onclick="limpar()">Limpar filtros</button></div>`;
+function vPainel(){
+  const v=S.viewer,f=S.f,{base,g,list}=filtrados();
+  const cnt=i=>base.filter(c=>c.topico===i).length,cntS=s=>base.filter(c=>c.sub===s).length;
+  const aberto=matchMedia('(min-width:1051px)').matches||f.topic!==null;
+  return `<div class="page-h"><div><p class="lab">Secretaria de ${SECS[v].nome}</p><h1>Painel geral de demandas</h1><p class="t2">Olá, ${SECS[v].resp.split(' ')[0]}. ${g.abertos.length} ${g.abertos.length===1?'chat aberto':'chats abertos'} e ${g.proc.length} em processo.</p></div>
+    <div class="actions"><button class="btn btn-secondary" onclick="go('cadastro')">${ic('userPlus')}Novo cadastro</button><button class="btn btn-primary" onclick="S.draft=null;go('demanda')">${ic('plus')}Nova demanda</button></div></div>
+  <section class="kpis" aria-label="Filtros de status">${KPI.map(([k,t,i,col])=>`<button class="kpi" style="--bar:${col}" aria-pressed="${f.st===k}" onclick="setSt('${k}')"><span style="color:${col}">${ic(i,32)}</span><b>${t}</b><small>${f.st===k?'Filtro ativo · clique para remover':'Clique para filtrar'}</small><span class="num">${g[k].length}</span></button>`).join('')}</section>
+  <div class="filters">
+    <div class="search">${ic('search')}<label class="sr" for="q">Buscar</label><input class="inp" id="q" type="search" value="${esc(f.q)}" placeholder="Buscar por palavra-chave ou protocolo…" oninput="S.f.q=this.value;updFeed()"></div>
+    <div class="urgf" role="group" aria-label="Filtros de urgência"><span class="sm t2">Filtros de urgência:</span>${[1,2,3].map(u=>`<button class="fchip" aria-pressed="${f.urg===u}" onclick="setUrg(${u})">Nível ${u} (${URG_NOME[u]})</button>`).join('')}</div>
+  </div>
+  <div class="board">
+    <details class="topics" ${aberto?'open':''}><summary class="lab">Tópicos e subtópicos</summary><nav aria-label="Tópicos"><ul>
+      ${TOPICS.map((t,i)=>`<li><button class="tp ${f.topic===i&&!f.sub?'on':''}" aria-expanded="${f.topic===i}" onclick="setTopic(${i})"><span>${i+1}. ${esc(t.n)}</span><span class="c">${cnt(i)}</span></button>
+        ${f.topic===i?`<ul>${t.subs.map(([s],j)=>`<li><button class="tp sub ${f.sub===s?'on':''}" onclick="setSub(${i},${j})"><span>${esc(s)}</span><span class="c">${cntS(s)}</span></button></li>`).join('')}</ul>`:''}</li>`).join('')}
+    </ul></nav></details>
+    <section aria-label="Feed geral de demandas">
+      <div class="box-h"><p class="lab">Feed geral de demandas</p><div class="actions">${feedHead(list.length)}${temFiltro()?'<button class="lnk" onclick="limpar()">Limpar filtros</button>':''}</div></div>
+      <div class="feed" id="feed">${list.length?list.map(cardHTML).join(''):emptyHTML()}</div>
+    </section>
+  </div>`;
+}
+
+/* ===== Tela 6.1: Cadastro do cidadão ===== */
+function vCadastro(){
+  return `<div class="page-h"><div><p class="lab">Primeiro atendimento</p><h1>Cadastro do cidadão</h1><p class="t2">Feito uma vez. O nível de sigilo é definido a cada demanda, na abertura.</p></div>
+    <button class="lnk" onclick="exemploCad()">Preencher com exemplo</button></div>
+  <div id="errsum" class="alert a-err errsum" tabindex="-1" hidden></div>
+  <form onsubmit="return false" novalidate>
+  <section class="box"><div class="box-h"><p class="lab">1. Dados básicos e identificação civil (sem histórico prévio)</p><span class="sm t2">* obrigatório</span></div><div class="grid2">
+    <div class="field full"><label class="lbl" for="nome">Nome completo ou nome social *</label><input class="inp" id="nome" autocomplete="off"></div>
+    <div class="field"><label class="lbl" for="cpf">CPF (busca preventiva) *</label><input class="inp" id="cpf" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="000.000.000-00" oninput="cpfInput(this)"><p class="hint">Avisa se o cidadão já tem cadastro, para evitar duplicados.</p><div id="dup"></div></div>
+    <div class="field"><label class="lbl" for="nasc">Data de nascimento *</label><input class="inp" id="nasc" type="date"></div>
+    <div class="field"><label class="lbl" for="mae">Nome da mãe</label><input class="inp" id="mae" autocomplete="off"></div>
+    <div class="field"><label class="lbl" for="ctt">Contato (telefone)</label><input class="inp" id="ctt" inputmode="tel" autocomplete="off" placeholder="(81) 90000-0000"></div>
+  </div></section>
+  <section class="box"><div class="box-h"><p class="lab">2. Termo de consentimento (LGPD)</p></div>
+    <div class="field" id="f-cons"><label class="choice"><input type="checkbox" id="cons"><div><b>Consentimento livre e esclarecido do assistido *</b><span>O cidadão foi informado de que nome, idade, CPF e a demanda são compartilhados só com as secretarias municipais, e pode revogar a qualquer momento.</span></div></label></div>
+    <p class="hint">O que será compartilhado em cada caso (nível de sigilo) é escolhido na abertura da demanda.</p>
+  </section>
+  <div class="foot"><button type="button" class="btn btn-secondary" onclick="go('painel')">Cancelar</button>
+    <div class="actions"><button type="button" class="btn btn-secondary" onclick="salvarCad(false)">Salvar cadastro apenas</button><button type="button" class="btn btn-primary" onclick="salvarCad(true)">Salvar e iniciar encaminhamento</button></div></div>
+  </form>`;
+}
+function cpfInput(el){
+  const d=el.value.replace(/\D/g,'').slice(0,11);
+  el.value=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2');
+  const z=S.cidadaos.find(c=>c.raw===d);
+  $('#dup').innerHTML=z?`<div class="alert a-att" style="margin-top:12px">${ic('alert')}<div><b>Atenção: já existe cadastro com este CPF (${esc(z.ini)}).</b><br><button type="button" class="lnk" onclick="S.draft='${z.id}';go('demanda')">Abrir demanda para ${esc(z.ini)}</button></div></div>`:'';
+}
+function exemploCad(){
+  $('#nome').value='Luiz Santos da Silva';const c=$('#cpf');c.value='44455566677';cpfInput(c);
+  $('#nasc').value='1963-04-12';$('#mae').value='Josefa Santos';$('#ctt').value='(81) 98765-4321';
+  $('#cons').checked=true;
+}
+function salvarCad(abrir){
+  const nome=$('#nome').value.trim(),raw=$('#cpf').value.replace(/\D/g,''),nasc=$('#nasc').value;
+  const e=[];
+  if(!nome)e.push({id:'nome',msg:'Informe o nome do cidadão.'});
+  if(raw.length!==11)e.push({id:'cpf',msg:'Informe o CPF com 11 dígitos.'});
+  else if(S.cidadaos.some(c=>c.raw===raw))e.push({id:'cpf',msg:'Este CPF já está cadastrado.'});
+  if(!nasc)e.push({id:'nasc',msg:'Informe a data de nascimento.'});
+  if(!$('#cons').checked)e.push({id:'f-cons',msg:'Registre o consentimento do cidadão.'});
+  if(showErrors(e))return;
+  const z=cid('z'+(S.cidadaos.length+1),nome,raw,nasc,true);
+  S.cidadaos.push(z);S.draft=z.id;
+  toast(`Registro salvo: cadastro de ${z.ini}.`);
+  go(abrir?'demanda':'painel');
+}
+
+/* ===== Tela 3: Abertura da demanda ===== */
+function vDemanda(){
+  S.files=[];const outras=lista(parcs({solicitante:S.viewer}).map(k=>SECS[k].nome));
+  return `<div class="page-h"><div><p class="lab">Nova demanda</p><h1>Formulário de abertura da demanda</h1><p class="t2">Ao criar, ${outras} recebem a notificação. Cada uma decide, dentro do chat, se participa. O chat abre em "Aguardando apoio".</p></div>
+    <button class="lnk" onclick="exemploDem()">Preencher com exemplo</button></div>
+  <div id="errsum" class="alert a-err errsum" tabindex="-1" hidden></div>
+  <form onsubmit="return false" novalidate>
+  <section class="box"><div class="box-h"><p class="lab">Categorização obrigatória</p><span class="sm t2">* obrigatório</span></div><div class="grid2">
+    <div class="field"><label class="lbl" for="dtop">Tópico principal *</label><select class="inp" id="dtop" onchange="subOpts()"><option value="">Selecionar tópico principal</option>${TOPICS.map((t,i)=>`<option value="${i}">${i+1}. ${esc(t.n)}</option>`).join('')}</select></div>
+    <div class="field"><label class="lbl" for="dsub">Subtópico *</label><select class="inp" id="dsub" disabled><option value="">Escolha o tópico primeiro</option></select></div>
+  </div></section>
+  <section class="box"><div class="box-h"><p class="lab">Classificação do grau de urgência</p></div>
+    <div class="field" id="f-urg"><span class="sr">Grau de urgência *</span><div class="grid3">
+      <label class="choice cu1"><input type="radio" name="urg" value="1"><div><b>Nível 1 (Baixa/Normal)</b><span>Rotina, prazos regulares.</span></div></label>
+      <label class="choice cu2"><input type="radio" name="urg" value="2"><div><b>Nível 2 (Média)</b><span>Atenção prioritária, sem risco iminente.</span></div></label>
+      <label class="choice cu3"><input type="radio" name="urg" value="3"><div><b>Nível 3 (Alta/Máxima)</b><span>Extrema vulnerabilidade ou risco iminente.</span></div></label></div></div>
+    <div class="field" id="f-uj"><label class="lbl" for="duj">Justificativa de urgência/prioridade <span class="t2" style="font-weight:400">(obrigatória no Nível 3)</span></label><textarea class="inp" id="duj" rows="2"></textarea></div>
+  </section>
+  <section class="box"><div class="box-h"><p class="lab">Identificação do assistido (LGPD)</p><button type="button" class="lnk" onclick="go('cadastro')">${ic('userPlus')}Novo cadastro</button></div>
+    <div class="grid2">
+      <div class="field" id="f-cid"><label class="lbl" for="dbusca">Buscar cidadão assistido *</label><div class="search">${ic('search')}<input class="inp" id="dbusca" type="search" autocomplete="off" placeholder="Nome ou CPF (ex: Luiz)" oninput="buscaCid()" aria-controls="sug"></div><input type="hidden" id="dcid"><ul class="sug" id="sug" hidden></ul><div id="cidinfo"></div></div>
+      <fieldset class="field" style="border:1px solid var(--soft);border-radius:8px;padding:16px 20px;margin:0"><legend class="lbl" style="padding:0 8px;margin:0">Trava de privacidade LGPD</legend>
+        <label class="chk"><input type="checkbox" id="tsaude"> Restringir dados de saúde</label>
+        <label class="chk"><input type="checkbox" id="tassist"> Restringir dados de assistência</label>
+        <p class="hint">Dados restritos ficam visíveis só para a secretaria da área e para a solicitante.</p></fieldset>
+    </div>
+    <div class="field" id="f-sig" style="margin-top:24px"><span class="lbl">Seletor de visualização (nível de sigilo) *</span>
+      <label class="choice"><input type="radio" name="sig" value="geral" checked onchange="sigChange()"><div><b>Acesso geral</b><span>Dados básicos identificáveis visíveis para as demais secretarias.</span></div></label>
+      <label class="choice"><input type="radio" name="sig" value="restrito" onchange="sigChange()"><div><b>Acesso restrito</b><span>Bloqueio de dados sensíveis de saúde e assistência. As demais secretarias veem só as iniciais e a idade.</span></div></label>
+      <p class="hint">Definido por demanda: o mesmo cidadão pode ter níveis diferentes em casos diferentes.</p></div>
+  </section>
+  <section class="box"><div class="box-h"><p class="lab">Detalhamento e anexos</p></div>
+    <div class="field"><label class="lbl" for="dres">Justificativa resumida da necessidade *</label><textarea class="inp" id="dres" rows="4"></textarea></div>
+    <div class="field"><span class="lbl">Anexos oficiais</span>
+      <label class="drop">${ic('upload',28)}<div><b>Upload de anexos oficiais</b>Laudos, pareceres, receitas</div><input type="file" multiple aria-label="Upload de anexos oficiais" onchange="addFiles(this,'files','dflist')"></label><div class="flist" id="dflist"></div></div>
+  </section>
+  <div class="foot"><button type="button" class="btn btn-secondary" onclick="go('painel')">Cancelar</button><button type="button" class="btn btn-primary" onclick="criarDemanda()">Criar e instanciar demanda</button></div>
+  </form>`;
+}
+function initDemanda(){if(S.draft)pickCid(S.draft)}
+function buscaCid(){
+  const q=$('#dbusca').value.trim().toLowerCase(),d=q.replace(/\D/g,''),u=$('#sug');
+  $('#dcid').value='';showCid(false);
+  const r=q?S.cidadaos.filter(z=>z.nome.toLowerCase().includes(q)||(d.length>=3&&z.raw.includes(d))):[];
+  u.hidden=!q;
+  u.innerHTML=r.length?r.map(z=>`<li><button type="button" onclick="pickCid('${z.id}')"><b>${esc(z.ini)}</b><span class="t2">${idade(z.nasc)} anos · CPF ${cpfMask(z.raw)}</span></button></li>`).join('')
+    :`<li style="padding:12px 16px" class="t2">Nenhum cidadão encontrado. <button type="button" class="lnk" style="display:inline-flex;width:auto;min-height:0;border:0;padding:0" onclick="go('cadastro')">Fazer novo cadastro</button></li>`;
+}
+function pickCid(id){const z=CID(id);$('#dcid').value=id;$('#dbusca').value=`${z.ini} · CPF ${cpfMask(z.raw)}`;$('#sug').hidden=true;showCid(true)}
+function sigChange(){
+  const r=(document.querySelector('[name=sig]:checked')||{}).value==='restrito',ts=$('#tsaude'),ta=$('#tassist');
+  if(!ts.disabled){ts.checked=ta.checked=r}
+}
+function showCid(){
+  const z=CID($('#dcid').value),e=$('#cidinfo'),ts=$('#tsaude'),ta=$('#tassist');
+  ts.disabled=ta.disabled=false;
+  if(!z){e.innerHTML='';return}
+  if(!z.consent){ts.checked=ta.checked=true;ts.disabled=ta.disabled=true;document.querySelector('[name=sig][value=restrito]').checked=true}
+  e.innerHTML=z.consent
+    ?`<div class="alert a-info" style="margin-top:12px">${ic('lock')}<span><b>${esc(z.ini)}, ${idade(z.nasc)} anos.</b> Consentimento registrado no cadastro.</span></div>`
+    :`<div class="alert a-att" style="margin-top:12px">${ic('alert')}<span><b>${esc(z.ini)} não consentiu.</b> Exceção registrada: ${esc(z.excecao)}</span></div>`;
+}
+function subOpts(){
+  const i=$('#dtop').value,s=$('#dsub');
+  if(i===''){s.disabled=true;s.innerHTML='<option value="">Escolha o tópico primeiro</option>';return}
+  s.disabled=false;s.innerHTML='<option value="">Selecionar subtópico</option>'+TOPICS[i].subs.map(([n,ex],j)=>`<option value="${j}">${esc(n)}${ex?` (${esc(ex)})`:''}</option>`).join('');
+}
+function addFiles(inp,key,box){[...inp.files].forEach(f=>S[key].push({n:f.name,s:f.size}));inp.value='';$('#'+box).innerHTML=S[key].map(a=>`<span class="att">${ic('file',16)}${esc(a.n)} <small>${kb(a.s)}</small></span>`).join('')}
+function exemploDem(){
+  let z=S.cidadaos.find(c=>c.raw==='44455566677');
+  if(!z){z=cid('z'+(S.cidadaos.length+1),'Luiz Santos da Silva','44455566677','1963-04-12',true);S.cidadaos.push(z);S.draft=z.id;render();return exemploDem()}
+  $('#dtop').value='2';subOpts();$('#dsub').value='1';
+  document.querySelector('[name=urg][value="3"]').checked=true;
+  $('#duj').value='Idoso de 63 anos dormindo na rodoviária desde o despejo, na quinta-feira. Tem pressão alta e está sem a medicação.';
+  pickCid(z.id);
+  document.querySelector('[name=sig][value=restrito]').checked=true;sigChange();
+  $('#dres').value='Precisamos de abrigo e alimentação urgente para o Sr. L.S., 63 anos, trabalhador rural. Perdeu a casa onde morava de aluguel e está dormindo na rodoviária. Pedimos vaga em acolhimento transitório e avaliação de saúde, com retomada da medicação para pressão.';
+}
+function criarDemanda(){
+  const z=CID($('#dcid').value),t=$('#dtop').value,sj=$('#dsub').value,v=S.viewer;
+  const u=(document.querySelector('[name=urg]:checked')||{}).value,uj=$('#duj').value.trim(),res=$('#dres').value.trim();
+  const e=[];
+  if(t==='')e.push({id:'dtop',msg:'Selecione o tópico principal.'});
+  else if(sj==='')e.push({id:'dsub',msg:'Selecione o subtópico.'});
+  if(!u)e.push({id:'f-urg',msg:'Selecione o grau de urgência.'});
+  else if(u==='3'&&!uj)e.push({id:'f-uj',msg:'Informe a justificativa, obrigatória no Nível 3.'});
+  if(!z)e.push({id:'dbusca',msg:'Busque e selecione o cidadão assistido.'});
+  if(!res)e.push({id:'dres',msg:'Descreva a necessidade.'});
+  if(showErrors(e))return;
+  const h=fmt(),n=S.seq++;
+  const c={id:'c'+n,n,cid:z.id,topico:+t,sub:TOPICS[t].subs[sj][0],urg:+u,justUrg:uj,status:'wait',etapa:1,criado:h,entregueEm:h,env:{},solicitante:v,resumo:res,
+    sigilo:document.querySelector('[name=sig]:checked').value,
+    trava:{saude:$('#tsaude').checked,assist:$('#tassist').checked},
+    aptas:[],compromissos:[],checks:[false,false,false],notas:'',entrega:'',desfecho:'',
+    msgs:[{de:v,txt:res,hora:h,anexos:[...S.files]}],
+    log:[{t:h,txt:`Demanda aberta pela ${SECS[v].nome}`},{t:h,txt:notifTxt({solicitante:v})}]};
+  if(!z.consent)c.log.push({t:h,txt:`Encaminhamento por exceção, sem consentimento: ${z.excecao}`});
+  S.cases.push(c);S.draft=null;S.files=[];
+  toast(`Demanda #${prot(c)} criada. Notificação entregue.`);
+  go('chat',c.id);
+}
+
+/* ===== Cabeçalho do caso ===== */
+const urgBar=u=>`<span class="urg${u}">Urgência: ${urgNivel(u)}</span>`;
+function caseHead(c,cur){
+  const z=CID(c.cid),sol=SECS[c.solicitante].nome;
+  const titulo={chat:'Ambiente de resolução (chat da instância)',timeline:'Acompanhamento de execução',comprovante:'Comprovante de encerramento'}[cur];
+  const trava=[c.trava.saude&&'saúde',c.trava.assist&&'assistência'].filter(Boolean);
+  const bar=cur==='chat'
+    ?`<span><b>Caso:</b> ${esc(z.ini)}</span><span><b>Tópico:</b> ${esc(TOPICS[c.topico].n)}</span><span><b>Status:</b> ${STATUS[c.status][0]}</span>${urgBar(c.urg)}`
+    :`<span><b>Cidadão assistido:</b> ${esc(z.ini)}</span><span><b>Secretaria solicitante:</b> ${sol}</span><span><b>Subtópico:</b> ${esc(c.sub)}</span>${urgBar(c.urg)}`;
+  return `<header class="case-h"><div class="page-h" style="margin-bottom:0;align-items:flex-start"><div><p class="lab">Protocolo #${prot(c)} · aberta em ${esc(c.criado)}</p><h1 style="margin-top:8px">${titulo}</h1></div>
+    ${cur==='chat'?'':`<span class="chip ${STATUS[c.status][1]}" style="font-size:15px;min-height:40px">Status: ${STATUS[c.status][0]}</span>`}</div>
+    <div class="casebar">${bar}</div>
+    <p class="sm t2" style="margin-top:8px;display:flex;gap:8px;align-items:center">${ic('lock',16)}<span>Nível de sigilo: ${c.sigilo==='restrito'?'Acesso restrito':'Acesso geral'}${trava.length?` · Trava de privacidade LGPD: dados de ${lista(trava)} restritos à secretaria da área e à solicitante`:''}.</span></p>
+    ${c.justUrg?`<div class="alert ${c.urg===3?'a-err':'a-att'}" style="margin-top:16px">${ic('alert')}<span><b>Justificativa da urgência:</b> ${esc(c.justUrg)}</span></div>`:''}
+  </header>
+  <div class="tabs" role="tablist">${[['chat','Chat da instância'],['timeline','Linha do tempo']].concat(c.status==='done'?[['comprovante','Comprovante']]:[]).map(([k,t])=>`<button class="tab" role="tab" aria-selected="${cur===k}" onclick="go('${k}','${c.id}')">${t}</button>`).join('')}</div>`;
+}
+
+/* ===== Tela 4: Chat da instância ===== */
+function marcaVista(c){
+  const v=S.viewer;
+  if(!c||v===c.solicitante||c.status==='done'||stEnv(c,v)!=='nao')return;
+  c.env[v]='passivo';
+  c.log.push({t:fmt(),txt:`${SECS[v].nome} visualizou a demanda e acompanha em modo passivo`});
+}
+function participar(id){
+  const c=C(id),v=S.viewer;if(v===c.solicitante||c.env[v]==='ativo'||c.status==='done')return;
+  c.env[v]='ativo';const h=fmt();
+  c.msgs.push({evt:true,txt:`${SECS[v].nome} passou a participar ativamente`,hora:h});
+  c.log.push({t:h,txt:`${SECS[v].nome} passou a participar ativamente`});
+  toast('Registro salvo: sua secretaria agora participa ativamente.');render();
+}
+function vChat(c){
+  const v=S.viewer,isSol=v===c.solicitante,papel=isSol?'sol':stEnv(c,v),aberto=c.status==='wait',fechado=c.status==='done',sol=c.solicitante;
+  const escreve=!fechado&&(isSol||papel==='ativo'),at=ativos(c),ps=passivos(c),nv=naoVistas(c);
+  const msgs=c.msgs.map(m=>m.evt?`<div class="evt">${esc(m.txt)} · ${hora(m.hora)}</div>`
+    :`<div class="msg ${m.de===v?'me':''}">${av(m.de)}<div><div class="msg-h"><b>${SECS[m.de].resp}</b><span>${SECS[m.de].nome}${m.de===sol?' (solicitante)':''}</span><time>${esc(m.hora)}</time></div><div class="bubble">${esc(m.txt)}</div>${(m.anexos||[]).map(a=>`<span class="att">${ic('clip',16)}${esc(a.n)} <small>${kb(a.s)}</small></span>`).join('')}</div></div>`).join('');
+  const row=(s,extra)=>`<li>${av(s)}<div class="who2"><b>${SECS[s].nome}</b><span>${SECS[s].resp}</span></div>${extra||''}</li>`;
+  const chipAt=s=>c.aptas.includes(s)?'<span class="chip c-ok">Apta</span>':(aberto?'<span class="chip c-att">Sem resposta</span>':'');
+  return `${caseHead(c,'chat')}
+  <div class="stamp" role="status">${ic('check',24)}<span><b>Notificação entregue às demais secretarias em ${esc(c.entregueEm)}</b> (${lista(parcs(c).map(k=>SECS[k].nome))} · comprovante automático)</span></div>
+  <div class="conv">
+    <aside class="box" style="margin:0" aria-label="Participantes"><p class="lab" style="margin-bottom:8px">Participantes</p>
+      <p class="pg">Ativo</p><ul class="plist">${row(sol).replace(SECS[sol].resp+'</span>',SECS[sol].resp+' · [Solicitante]</span>')}${at.map(s=>row(s,chipAt(s))).join('')}</ul>
+      ${ps.length?`<p class="pg">Passivo (modo leitura)</p><ul class="plist">${ps.map(s=>row(s)).join('')}</ul>`:''}
+      ${nv.length?`<p class="pg">Notificadas, ainda não abriram</p><ul class="plist">${nv.map(s=>row(s)).join('')}</ul>`:''}
+      ${!fechado&&!isSol&&papel==='passivo'?`<button class="btn btn-primary btn-block" onclick="participar('${c.id}')">${ic('plus')}Participar</button><p class="hint">Você está em modo passivo (leitura). Ao participar, sua secretaria passa a Ativo e pode escrever no chat.</p>`:''}
+      ${aberto&&papel==='ativo'&&!c.aptas.includes(v)?`<button class="btn btn-primary btn-block" onclick="apta('${c.id}')">${ic('check')}Apta para ajudar</button><p class="hint">Sua secretaria assume uma entrega e passa a responder por ela.</p>`:''}
+      ${aberto&&papel==='ativo'&&c.aptas.includes(v)?`<div class="alert a-ok">${ic('checkCircle')}<span>Sua secretaria está apta. Aguardando o aceite da solicitante.</span></div>`:''}
+      ${aberto&&isSol&&!c.aptas.length?`<div class="divider" style="margin:16px 0"></div><button class="lnk teal" onclick="simular('${c.id}')">Simular resposta das secretarias</button><p class="hint" style="margin-top:0">Atalho da demonstração. Também é possível trocar o perfil, abrir o chat e participar como cada secretaria.</p>`:''}
+    </aside>
+    <section class="box" style="margin:0;padding:0" aria-label="Conversa">
+      <div class="msgs" id="msgs" tabindex="0" aria-label="Mensagens">${msgs}</div>
+      <div class="composer">${escreve?`<label class="sr" for="mtxt">Mensagem</label><textarea class="inp" id="mtxt" rows="2" placeholder="Digite uma mensagem…" style="min-height:80px"></textarea>
+        <div class="composer-f"><div><span class="btn btn-secondary filebtn">${ic('clip')}Anexar PDF, laudos, receitas<input type="file" multiple aria-label="Anexar PDF, laudos, receitas" onchange="addFiles(this,'cfiles','cflist')"></span><div class="flist" id="cflist">${S.cfiles.map(a=>`<span class="att">${ic('file',16)}${esc(a.n)}</span>`).join('')}</div></div>
+        <button class="btn btn-primary" onclick="enviar('${c.id}')">${ic('send')}Enviar</button></div>`
+      :fechado?`<div class="alert a-info">${ic('lock')}<span>Chat encerrado em ${esc(c.encerradoEm||'')}. O histórico foi mantido para consulta, mas não é possível enviar novas mensagens.</span></div>`
+      :`<div class="alert a-info">${ic('info')}<span>Sua secretaria acompanha este caso em modo passivo (leitura). Clique em "Participar" para escrever no chat.</span></div>`}</div>
+    </section>
+  </div>
+  ${aberto?(isSol?`<div class="actionbar"><button class="btn btn-danger" onclick="cancelar('${c.id}')">Cancelar instância</button>
+      <div class="actions"><span class="sm t2">${c.aptas.length?`${lista(c.aptas.map(s=>SECS[s].nome))} ${c.aptas.length>1?'estão aptas':'está apta'}.`:'Liberado quando ao menos uma secretaria estiver apta.'}</span>
+      <button class="btn btn-primary" ${c.aptas.length?'':'disabled'} onclick="aceitar('${c.id}')">Confirmar aceite e iniciar processo</button></div></div>`
+    :`<div class="actionbar"><span class="t2">Somente a secretaria solicitante confirma o aceite.</span></div>`):''}`;
+}
+function enviar(id){
+  const c=C(id),t=$('#mtxt').value.trim();if(!t&&!S.cfiles.length){$('#mtxt').focus();return}
+  c.msgs.push({de:S.viewer,txt:t||'Arquivo anexado.',hora:fmt(),anexos:[...S.cfiles]});S.cfiles=[];render();
+}
+function apta(id,sec){
+  const c=C(id),s=sec||S.viewer;if(c.aptas.includes(s))return;
+  const acolh=c.sub==='Acolhimento institucional transitório';
+  const titulo=acolh?(s==='hab'?'Acolhimento transitório':s==='sau'?'Consultas e retomada da medicação':'Apoio da Educação'):`Apoio da ${SECS[s].nome}`;
+  c.aptas.push(s);c.compromissos.push({sec:s,titulo,status:'Aguardando',just:''});
+  const h=fmt();c.msgs.push({evt:true,txt:`${SECS[s].nome} declarou-se apta a ajudar`,hora:h});c.log.push({t:h,txt:`${SECS[s].nome} declarou-se apta a ajudar`});
+  if(!sec){toast('Registro salvo: sua secretaria está apta.');render()}
+}
+function simular(id){
+  const c=C(id),acolh=c.sub==='Acolhimento institucional transitório';
+  const alvo=acolh?['hab','sau']:parcs(c).slice(0,2);
+  alvo.forEach(s=>{
+    if(c.aptas.includes(s))return;
+    let txt='Podemos apoiar. Vou registrar a entrega da nossa parte.',anexos=[];
+    if(acolh&&s==='hab'){txt='Temos vaga para acolhimento provisório na Casa de Acolhimento, a partir de amanhã às 8h. Segue o termo para ele assinar na chegada.';anexos=[{n:'termo_acolhimento.pdf',s:192512}]}
+    if(acolh&&s==='sau'){txt='A UBS Centro faz a consulta na quarta pela manhã e regulariza a medicação da pressão. Veja o laudo técnico anexo:';anexos=[{n:'laudo_urgente.pdf',s:88064}]}
+    c.env[s]='ativo';const h=fmt();
+    c.msgs.push({evt:true,txt:`${SECS[s].nome} passou a participar ativamente`,hora:h});
+    c.log.push({t:h,txt:`${SECS[s].nome} passou a participar ativamente`});
+    c.msgs.push({de:s,txt,hora:h,anexos});apta(id,s);
+  });
+  render();
+}
+function aceitar(id){
+  const c=C(id),fora=ativos(c).filter(s=>!c.aptas.includes(s));
+  ask({title:'Confirmar aceite e iniciar processo?',ok:'Confirmar aceite',html:`<p>${lista(c.aptas.map(s=>SECS[s].nome))} ${c.aptas.length>1?'passam':'passa'} a responder pelas entregas. O status muda para "Em processo" e o acompanhamento segue na linha do tempo. O chat continua aberto para consultas até o encerramento do caso.</p>${fora.length?`<p style="margin-top:12px">${lista(fora.map(s=>SECS[s].nome))} não se declarou apta e fica fora das entregas.</p>`:''}`},()=>{
+    c.status='proc';c.etapa=3;c.aceiteEm=fmt();logPush(c,`Aceite de cooperação confirmado pela ${SECS[c.solicitante].nome}; processo iniciado`);
+    c.msgs.push({evt:true,txt:'Aceite confirmado: processo iniciado',hora:c.aceiteEm});
+    toast('Registro salvo: processo iniciado.');go('timeline',id);
+  });
+}
+function cancelar(id){
+  ask({title:'Cancelar esta instância?',danger:true,ok:'Cancelar instância',field:'Motivo do cancelamento',html:'<p>As secretarias acionadas são avisadas e a demanda sai do painel. O motivo fica registrado.</p>'},()=>{
+    S.cases=S.cases.filter(c=>c.id!==id);toast('Registro salvo: instância cancelada.');go('painel');
+  });
+}
+
+/* ===== Tela 5: Linha do tempo ===== */
+const ENTC={'Aguardando':'s-att','Em execução':'s-info','Concluída':'s-ok','Inviabilizada':'s-err','Desvinculada':'s-err','Dispensada':''};
+function vTimeline(c){
+  const v=S.viewer,isSol=v===c.solicitante,ef=etapaEf(c),z=CID(c.cid),full=isSol||(z.consent&&c.sigilo==='geral');
+  const steps=`<ol class="steps" aria-label="Linha do tempo multissecretarial">${ETAPAS.map((t,i)=>{const n=i+1,cl=n<ef?'done':n===ef?'cur':'',st=n<ef?'Concluída':n===ef?'Atual':'Pendente';return `<li class="step ${cl}" ${n===ef?'aria-current="step"':''}><span class="node">${n<ef?ic('check',18):n}</span><div><b>Etapa ${n}</b><span class="nm">${t}</span><span>${st}</span></div></li>`}).join('')}</ol>`;
+  const cards=c.compromissos.map(x=>`<article class="ent ${ENTC[x.status]}"><b>Sec. ${SECS[x.sec].nome} – ${esc(x.titulo)}</b><span class="t2">Responsável: ${SECS[x.sec].resp}</span><span class="chip ${ENT[x.status]}">${x.status}</span>${x.just?`<p class="why">Justificativa: ${esc(x.just)}</p>`:''}</article>`).join('');
+  const pend=c.compromissos.filter(x=>!RESOLV.includes(x.status));
+  const priv=isSol?`<section class="box priv" aria-label="Camada privada"><p class="lab">${ic('lock')}Camada privada</p>
+      <p class="sm t2" style="margin:8px 0 16px">Exclusivo da secretaria solicitante. Checkpoints internos e notas de bastidores, invisíveis para as secretarias parceiras.</p>
+      <p class="pg">Checklists de controle interno</p>
+      ${CHECKS.map((t,i)=>`<label class="chk"><input type="checkbox" ${c.checks[i]?'checked':''} onchange="C('${c.id}').checks[${i}]=this.checked">${t}</label>`).join('')}
+      <div class="field" style="margin:16px 0"><label class="lbl" for="notas">Notas privadas</label><textarea class="inp" id="notas" rows="3" oninput="C('${c.id}').notas=this.value">${esc(c.notas)}</textarea></div>
+      ${c.status==='proc'&&c.etapa===3&&pend.length?`<button class="btn btn-danger btn-block" onclick="forcar('${c.id}')">Forçar avanço autônomo</button><p class="hint">Prerrogativa da solicitante em caso de atraso ou omissão de uma secretaria parceira.</p>`:''}
+    </section>`
+    :`<div class="alert a-info">${ic('lock')}<span>A camada privada da ${SECS[c.solicitante].nome} (checkpoints e notas internas) é visível só para a secretaria que criou a demanda.</span></div>`;
+  const rs=(flag,area)=>!flag?'<span class="chip c-ok">Compartilhados</span>':(isSol||v===area?'<span class="chip c-att">Restritos · com acesso</span>':'<span class="chip c-err">Restritos</span>');
+  const dados=`<section class="box"><div class="box-h"><p class="lab">Cidadão assistido</p></div><dl class="kv">
+      <dt>Identificação</dt><dd>${full?esc(z.nome):esc(z.ini)}</dd>
+      <dt>Idade</dt><dd>${idade(z.nasc)} anos</dd>
+      ${full?`<dt>CPF</dt><dd class="mono">${cpfMask(z.raw)}</dd>`:''}
+      <dt>Nível de sigilo</dt><dd>${c.sigilo==='restrito'?'Acesso restrito':'Acesso geral'}</dd>
+      <dt>Dados de saúde</dt><dd>${rs(c.trava.saude,'sau')}</dd>
+      <dt>Dados de assistência</dt><dd>${rs(c.trava.assist,'as')}</dd>
+    </dl>${!full?'<p class="hint" style="margin-top:16px">Acesso restrito definido pela secretaria solicitante: identificação completa oculta.</p>':''}</section>`;
+  return `${caseHead(c,'timeline')}
+  <section class="box"><div class="box-h"><p class="lab">Linha do tempo</p><span class="sm t2">Barra de status macro, visível para todas as secretarias do caso</span></div>${steps}
+    ${c.aceiteEm?`<p class="aceite">Aceite de cooperação registrado por ${SECS[c.solicitante].resp} (${SECS[c.solicitante].nome}) em ${esc(c.aceiteEm)}.</p>`:''}</section>
+  <div class="tl"><section class="box"><div class="box-h" style="margin-bottom:8px"><p class="lab">Acompanhamento de entregas</p><span class="sm t2">Secretarias parceiras${passivos(c).length?` · passivo: ${passivos(c).map(s=>SECS[s].nome).join(', ')}`:''}</span></div>
+      ${cards?`<div class="ents">${cards}</div>`:'<p class="t2">Nenhuma secretaria assumiu entrega ainda.</p>'}</section>
+    <aside>${dados}${priv}</aside></div>
+  <div class="tlbar"><span class="t2">${dica(c)}</span>
+    <button class="btn btn-primary" onclick="atualizar('${c.id}')">Atualizar etapa</button>
+    ${isSol?`<button class="btn btn-secondary" onclick="toast('Registro salvo: alterações da camada privada.')">Salvar alterações</button>`:''}</div>`;
+}
+function dica(c){
+  const v=S.viewer,isSol=v===c.solicitante;
+  if(c.status==='wait')return 'O processo começa quando a solicitante confirmar o aceite no chat.';
+  if(c.status==='done')return `Caso encerrado em ${esc(c.encerradoEm)}. Desfecho: ${esc(c.desfecho)}.`;
+  const pend=c.compromissos.filter(x=>!RESOLV.includes(x.status));
+  if(c.etapa===3){
+    if(isSol)return pend.length?`Entregas pendentes: ${lista(pend.map(x=>SECS[x.sec].nome))}.`:'Todas as entregas resolvidas. Atualize a etapa para a devolutiva.';
+    const mine=c.compromissos.find(x=>x.sec===v&&!RESOLV.includes(x.status));
+    return mine?'Atualize a etapa para registrar a situação da entrega da sua secretaria.':'A parte da sua secretaria já foi registrada.';
+  }
+  if(c.etapa===4)return isSol?'Atualize a etapa para registrar a devolutiva ao cidadão.':`A ${SECS[c.solicitante].nome} está fazendo a devolutiva ao cidadão.`;
+  return isSol?'Atualize a etapa para registrar o desfecho e emitir o comprovante.':`A ${SECS[c.solicitante].nome} vai registrar o desfecho.`;
+}
+function painel(o){
+  const d=$('#dlg');
+  d.innerHTML=`<div class="dlg-b"><h2 id="dlgt">${esc(o.title)}</h2>${o.html||''}<div id="dlgerr"></div></div>
+  <div class="dlg-f"><button type="button" class="btn btn-secondary" id="dlgc">${o.ok?'Voltar':'Fechar'}</button>${o.ok?`<button type="button" class="btn ${o.danger?'btn-danger':'btn-primary'}" id="dlgok">${esc(o.ok)}</button>`:''}</div>`;
+  d.setAttribute('aria-labelledby','dlgt');d.oncancel=()=>render();d.showModal();
+  if(o.init)o.init();
+  $('#dlgc').onclick=()=>{d.close();render()};
+  if(o.ok)$('#dlgok').onclick=()=>{const er=o.run();if(er){$('#dlgerr').innerHTML=`<p class="ferr" style="margin-top:16px">Erro: ${esc(er)}</p>`;return}d.close()};
+}
+function atualizar(id){
+  const c=C(id),v=S.viewer,isSol=v===c.solicitante;
+  if(c.status==='wait')return painel({title:'Aguardando o aceite',html:'<p>O processo só começa quando a secretaria solicitante confirmar o aceite no chat da instância.</p><div class="actions" style="margin-top:16px"><button class="btn btn-secondary" onclick="$(\'#dlg\').close();go(\'chat\',\''+id+'\')">Ir para o chat</button></div>'});
+  if(c.status==='done')return painel({title:'Caso encerrado',html:`<p>Desfecho: ${esc(c.desfecho)}.</p><div class="actions" style="margin-top:16px"><button class="btn btn-secondary" onclick="$('#dlg').close();go('comprovante','${id}')">Ver comprovante</button></div>`});
+  const pend=c.compromissos.filter(x=>!RESOLV.includes(x.status));
+  if(c.etapa===3&&!isSol){
+    const i=c.compromissos.findIndex(x=>x.sec===v&&!RESOLV.includes(x.status));
+    if(i<0)return painel({title:'Nada a atualizar',html:'<p>A entrega da sua secretaria já foi registrada. Aguarde as demais secretarias.</p>'});
+    const x=c.compromissos[i];
+    return painel({title:'Atualizar entrega da sua secretaria',ok:'Salvar situação',
+      html:`<p>${esc(x.titulo)}</p><div class="field" style="margin-top:16px"><span class="lbl">Situação da entrega *</span>${['Aguardando','Em execução','Concluída','Inviabilizada'].map(o=>`<label class="choice"><input type="radio" name="ents" value="${o}" ${o===x.status?'checked':''} onchange="$('#f-just').hidden=this.value!=='Inviabilizada'"><div><b>${o}</b>${o==='Inviabilizada'?'<span>Exige justificativa formal (laudo ou motivo).</span>':''}</div></label>`).join('')}</div>
+      <div class="field" id="f-just" hidden><label class="lbl" for="just">Justificativa *</label><textarea class="inp" id="just" rows="3"></textarea></div>`,
+      run(){const st=document.querySelector('[name=ents]:checked').value,j=$('#just').value.trim();
+        if(st==='Inviabilizada'&&!j)return 'a justificativa é obrigatória para inviabilizar.';
+        x.status=st;x.just=st==='Inviabilizada'?j:'';
+        logPush(c,`${SECS[x.sec].nome}: ${st==='Concluída'?`entrega concluída (${x.titulo})`:st==='Inviabilizada'?`entrega inviabilizada. Motivo: ${j}`:`entrega ${st.toLowerCase()}`}`);
+        toast(`Registro salvo: entrega ${st.toLowerCase()}.`);render()}});
+  }
+  if(!isSol)return painel({title:'Etapa conduzida pela solicitante',html:`<p>${dica(c)}</p>`});
+  if(c.etapa===3){
+    if(pend.length)return painel({title:'Ainda há entregas pendentes',html:`<p>${lista(pend.map(x=>SECS[x.sec].nome))} ainda não ${pend.length>1?'concluíram':'concluiu'} a entrega. Cada secretaria atualiza a própria entrega.</p><p style="margin-top:12px">Em caso de atraso ou omissão, use "Forçar avanço autônomo" na camada privada.</p>`});
+    return painel({title:'Avançar para a etapa 4?',ok:'Avançar para devolutiva',html:'<p>Todas as entregas foram resolvidas. A próxima etapa é a devolutiva e entrega ao cidadão.</p>',run(){c.etapa=4;logPush(c,'Execução concluída; devolutiva ao cidadão iniciada');toast('Registro salvo: etapa 4 iniciada.');render()}});
+  }
+  if(c.etapa===4)return painel({title:'Etapa 4 · Devolutiva e entrega',ok:'Registrar devolutiva',
+    html:`<div class="field" style="margin-top:16px"><label class="lbl" for="entr">Como a entrega foi feita ao cidadão? *</label><textarea class="inp" id="entr" rows="3" placeholder="Ex.: termo de acolhimento e encaminhamento da UBS entregues em mãos no CRAS."></textarea></div>`,
+    run(){const t=$('#entr').value.trim();if(!t)return 'descreva como a entrega foi feita.';c.entrega=t;c.etapa=5;logPush(c,`Devolutiva ao cidadão registrada: ${t}`);toast('Registro salvo: devolutiva.');render()}});
+  const ok=c.compromissos.filter(x=>x.status==='Concluída').length,t=c.compromissos.length,sug=ok===t?0:ok>0?1:2;
+  return painel({title:'Etapa 5 · Desfecho e encerramento',ok:'Encerrar e emitir comprovante',
+    html:`<div class="field" style="margin-top:16px"><label class="lbl" for="desf">Status final *</label><select class="inp" id="desf">${['Atendido integralmente','Atendido parcialmente','Indeferido'].map((o,i)=>`<option ${i===sug?'selected':''}>${o}</option>`).join('')}</select><p class="hint">${ok} de ${t} entregas concluídas.</p></div>`,
+    run(){encerrar(id,$('#desf').value)}});
+}
+function forcar(id){
+  const c=C(id),pend=c.compromissos.filter(x=>!RESOLV.includes(x.status));
+  const entregou=x=>c.compromissos.some(y=>y.sec===x.sec&&y.status==='Concluída');
+  ask({title:'Forçar avanço autônomo?',danger:true,ok:'Forçar avanço',field:'Motivo',html:`<p>As pendências serão tratadas assim:</p><ul>${pend.map(x=>`<li>${SECS[x.sec].nome}: ${esc(x.titulo)} → <b>${entregou(x)?'item dispensado; a secretaria mantém o que já entregou':'secretaria desvinculada por não ter nenhuma entrega'}</b></li>`).join('')}</ul><p>O gestor da secretaria desvinculada é avisado, e tudo vai para o histórico de auditoria.</p>`},m=>{
+    pend.forEach(x=>{const e=entregou(x);x.status=e?'Dispensada':'Desvinculada';x.just=`Avanço autônomo: ${m}`;logPush(c,e?`${SECS[x.sec].nome}: item dispensado por avanço autônomo`:`${SECS[x.sec].nome}: desvinculada por omissão (nenhuma entrega); gestor avisado`)});
+    c.etapa=4;logPush(c,`Avanço autônomo pela ${SECS[c.solicitante].nome}. Motivo: ${m}`);toast('Registro salvo: avanço autônomo.');render();
+  });
+}
+async function encerrar(id,desf){
+  const c=C(id);c.desfecho=desf;c.encerradoEm=fmt();c.status='done';
+  c.msgs.push({evt:true,txt:'Caso encerrado: chat bloqueado, histórico mantido',hora:c.encerradoEm});
+  logPush(c,`Caso encerrado: ${c.desfecho.toLowerCase()}`);
+  c.hash=await hashOf(c);toast('Registro salvo: comprovante emitido.');go('comprovante',id);
+}
+
+/* ===== Tela 6: Comprovante ===== */
+function vComp(c){
+  const z=CID(c.cid),code=(c.hash||'').slice(0,8).toUpperCase().replace(/(.{4})/,'$1-');
+  return `${caseHead(c,'comprovante')}
+  <article class="doc">
+    <div class="doc-h"><div class="doc-brand"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#243F8F"/><rect x="6" y="14" width="17" height="12" rx="6" fill="none" stroke="#fff" stroke-width="3"/><rect x="17" y="14" width="17" height="12" rx="6" fill="none" stroke="#9FD6D3" stroke-width="3"/><path d="M18.6 14.6a6 6 0 0 1 4 3.6" fill="none" stroke="#fff" stroke-width="3"/></svg><div><b>SeConecta</b><span>Sistema de solicitações intersecretariais</span></div></div>
+      <div class="r"><span class="chip c-ok">Status: Encerrado</span></div></div>
+    <h1>Comprovante de encerramento e respaldo oficial</h1>
+    <p class="t2">Documento gerado automaticamente pelo sistema no encerramento do caso.</p>
+    <div class="doc-top"><div>
+    <h2>1. Dados do atendimento</h2>
+    <dl class="dkv">
+      <dt>Cidadão assistido</dt><dd>${esc(z.ini)} <span class="t2">(identificação completa restrita)</span></dd>
+      <dt>Protocolo único</dt><dd class="mono">#${prot(c)}</dd>
+      <dt>Grau de urgência</dt><dd><b>${urgNivel(c.urg)}</b></dd>
+      <dt>Secretaria solicitante</dt><dd>${SECS[c.solicitante].nome} · ${SECS[c.solicitante].resp}</dd>
+      <dt>Desfecho</dt><dd><b>${esc(c.desfecho)}</b></dd>
+      <dt>Hash criptográfico</dt><dd class="hash">${esc(c.hash||'calculando…')}</dd>
+    </dl></div>
+    <div class="urgbox" ${c.urg===3?'':'style="border-color:var(--border);background:var(--bg);color:var(--text)"'}><small>Grau de urgência</small><b>${urgNivel(c.urg)}</b></div></div>
+    <h2>2. Histórico com carimbo de notificação entregue e auditoria</h2>
+    <table><tbody>
+      <tr><td style="width:200px" class="t2">${esc(c.encerradoEm||'')}</td><td><b>Etapas 1 a 5 concluídas</b></td></tr>
+      <tr><td style="width:200px" class="t2">${esc(c.entregueEm)}</td><td><b>[Carimbo]</b> Notificação entregue ao órgão de destino em ${esc(c.entregueEm)} (comprovante automático)</td></tr>
+      ${c.log.map(l=>`<tr><td style="width:200px" class="t2">${esc(l.t)}</td><td>${esc(l.txt)}</td></tr>`).join('')}
+    </tbody></table>
+    <h2>3. Entregas e justificativas</h2>
+    <table><thead><tr><th>Secretaria</th><th>Entrega</th><th>Responsável</th><th>Situação</th></tr></thead><tbody>
+      ${c.compromissos.map(x=>`<tr><td>${SECS[x.sec].nome}</td><td>${esc(x.titulo)}${x.just?`<small>${esc(x.just)}</small>`:''}</td><td>${SECS[x.sec].resp}</td><td>${x.status}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="verif"><div><p class="lab" style="margin-bottom:8px">Verificação de autenticidade</p><p class="sm t2">Qualquer alteração nos dados do caso gera outro hash. A assinatura digital com certificado ICP-Brasil e o QR code de validação estão previstos para a versão final.</p></div><div><span class="sm t2">Código de verificação</span><div class="code">${code}</div></div></div>
+    <div class="doc-foot"><button class="btn btn-primary" onclick="window.print()">${ic('download')}Baixar PDF</button><button class="btn btn-secondary" onclick="go('painel')">Voltar ao painel geral</button></div>
+  </article>`;
+}
+
+/* ===== Início ===== */
+seed();
+render();
+matchMedia('(min-width:1051px)').addEventListener('change',()=>{if(S.route.name==='painel')render()});
+(async()=>{for(const c of S.cases)if(c.status==='done'&&!c.hash)c.hash=await hashOf(c);if(S.route.name==='comprovante')render()})();
+</script>
+</body>
+</html>

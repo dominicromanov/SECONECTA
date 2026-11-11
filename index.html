@@ -51,6 +51,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .navi[aria-current=page]::after{bottom:-24px;background:radial-gradient(circle at 0 100%,transparent 23.5px,var(--bg) 24px)}
 .navi:focus-visible{outline-color:#fff;outline-offset:-4px}
 .side-foot{margin-top:auto;padding:0 16px 0 8px}
+.side-foot .reset{margin-top:8px;width:100%;min-height:44px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6);border-radius:8px;font:inherit;font-size:14px;cursor:pointer}
+.side-foot .reset:hover{background:rgba(255,255,255,.12)}
+.side-foot .reset:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .side-foot p{font-size:13px;color:#CFD8F0;border:1px dashed rgba(255,255,255,.45);border-radius:8px;padding:8px 12px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:24px 40px 8px}
 .crumbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--text-2)}
@@ -73,7 +76,8 @@ main{padding:16px 40px 48px;max-width:1360px;outline:0}
   .navi{border-radius:8px;min-height:44px;padding:0 12px;gap:8px;font-size:15px}
   .navi[aria-current=page]{background:#fff}
   .navi::before,.navi::after{display:none!important}
-  .side-foot{display:none}
+  .side-foot{width:100%;margin-top:0;padding:0}
+  .side-foot p{display:none}
   .top{padding:16px 16px 0}
   main{padding:16px 16px 40px}
 }
@@ -386,7 +390,7 @@ dialog::backdrop{background:rgba(31,41,55,.55)}
       <div><b>SeConecta</b><span>Sistema de solicitações intersecretariais</span></div>
     </button>
     <nav class="nav" id="nav" aria-label="Principal"></nav>
-    <div class="side-foot"><p>Protótipo v1 · dados fictícios, sem servidor</p></div>
+    <div class="side-foot"><p>Protótipo v1 · dados fictícios. Salvos neste navegador.</p><button class="reset" onclick="reiniciar()">Reiniciar dados de demonstração</button></div>
   </aside>
   <div>
     <header class="top">
@@ -590,6 +594,7 @@ function render(){
   $('#main').innerHTML=views[r.name]();
   if(r.name==='demanda')initDemanda();
   if(r.name==='chat'){const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight}
+  salvar();
 }
 
 /* ===== Tela 2: Painel geral ===== */
@@ -901,7 +906,8 @@ function aceitar(id){
   });
 }
 function cancelar(id){
-  ask({title:'Cancelar esta instância?',danger:true,ok:'Cancelar instância',field:'Motivo do cancelamento',html:'<p>As secretarias acionadas são avisadas e a demanda sai do painel. O motivo fica registrado.</p>'},()=>{
+  ask({title:'Cancelar esta instância?',danger:true,ok:'Cancelar instância',field:'Motivo do cancelamento',html:'<p>As secretarias acionadas são avisadas e a demanda sai do painel. O motivo fica registrado.</p>'},m=>{
+    const c=C(id);S.cancelados=(S.cancelados||[]).concat({id,prot:prot(c),por:SECS[c.solicitante].nome,motivo:m,em:fmt()});
     S.cases=S.cases.filter(c=>c.id!==id);toast('Registro salvo: instância cancelada.');go('painel');
   });
 }
@@ -916,8 +922,8 @@ function vTimeline(c){
   const priv=isSol?`<section class="box priv" aria-label="Camada privada"><p class="lab">${ic('lock')}Camada privada</p>
       <p class="sm t2" style="margin:8px 0 16px">Exclusivo da secretaria solicitante. Checkpoints internos e notas de bastidores, invisíveis para as secretarias parceiras.</p>
       <p class="pg">Checklists de controle interno</p>
-      ${CHECKS.map((t,i)=>`<label class="chk"><input type="checkbox" ${c.checks[i]?'checked':''} onchange="C('${c.id}').checks[${i}]=this.checked">${t}</label>`).join('')}
-      <div class="field" style="margin:16px 0"><label class="lbl" for="notas">Notas privadas</label><textarea class="inp" id="notas" rows="3" oninput="C('${c.id}').notas=this.value">${esc(c.notas)}</textarea></div>
+      ${CHECKS.map((t,i)=>`<label class="chk"><input type="checkbox" ${c.checks[i]?'checked':''} onchange="C('${c.id}').checks[${i}]=this.checked;salvar()">${t}</label>`).join('')}
+      <div class="field" style="margin:16px 0"><label class="lbl" for="notas">Notas privadas</label><textarea class="inp" id="notas" rows="3" oninput="C('${c.id}').notas=this.value;salvar()">${esc(c.notas)}</textarea></div>
       ${c.status==='proc'&&c.etapa===3&&pend.length?`<button class="btn btn-danger btn-block" onclick="forcar('${c.id}')">Forçar avanço autônomo</button><p class="hint">Prerrogativa da solicitante em caso de atraso ou omissão de uma secretaria parceira.</p>`:''}
     </section>`
     :`<div class="alert a-info">${ic('lock')}<span>A camada privada da ${SECS[c.solicitante].nome} (checkpoints e notas internas) é visível só para a secretaria que criou a demanda.</span></div>`;
@@ -938,7 +944,7 @@ function vTimeline(c){
     <aside>${dados}${priv}</aside></div>
   <div class="tlbar"><span class="t2">${dica(c)}</span>
     <button class="btn btn-primary" onclick="atualizar('${c.id}')">Atualizar etapa</button>
-    ${isSol?`<button class="btn btn-secondary" onclick="toast('Registro salvo: alterações da camada privada.')">Salvar alterações</button>`:''}</div>`;
+    ${isSol?`<button class="btn btn-secondary" onclick="salvar();toast('Registro salvo: alterações da camada privada.')">Salvar alterações</button>`:''}</div>`;
 }
 function dica(c){
   const v=S.viewer,isSol=v===c.solicitante;
@@ -1044,8 +1050,47 @@ function vComp(c){
 }
 
 /* ===== Início ===== */
-seed();
+/* ===== Persistência (localStorage, por navegador) ===== */
+const KEY='seconecta:v5';
+function salvar(){
+  if(reiniciar.on)return;
+  const ui=JSON.stringify({viewer:S.viewer,route:S.route});
+  try{sessionStorage.setItem(KEY+':ui',ui)}catch(e){}
+  try{localStorage.setItem(KEY+':ui',ui)}catch(e){}
+  if(salvar.mudo)return;
+  try{const v=JSON.stringify({cases:S.cases,cidadaos:S.cidadaos,seq:S.seq,cancelados:S.cancelados||[]});if(localStorage.getItem(KEY)!==v)localStorage.setItem(KEY,v)}catch(e){}
+}
+function carregar(){
+  try{
+    const d=JSON.parse(localStorage.getItem(KEY)||'null');
+    if(!d||!Array.isArray(d.cases)||!Array.isArray(d.cidadaos))return false;
+    S.cases=d.cases;S.cidadaos=d.cidadaos;S.seq=d.seq;S.cancelados=d.cancelados||[];
+    let ui=null;try{ui=JSON.parse(sessionStorage.getItem(KEY+':ui')||'null')}catch(e){}
+    if(!ui)try{ui=JSON.parse(localStorage.getItem(KEY+':ui')||'null')}catch(e){}
+    if(ui&&SECS[ui.viewer]){S.viewer=ui.viewer;S.route=ui.route||{name:'painel'}}
+    if(S.route.name==='demanda'||S.route.name==='cadastro')S.route={name:'painel'};
+    return true;
+  }catch(e){return false}
+}
+function reiniciar(){
+  if(!confirm('Apagar tudo o que foi feito e voltar aos dados iniciais de demonstração?'))return;
+  reiniciar.on=true;try{localStorage.removeItem(KEY);localStorage.removeItem(KEY+':ui');sessionStorage.removeItem(KEY+':ui')}catch(e){}
+  location.reload();
+}
+if(!carregar())seed();
 render();
+addEventListener('pagehide',salvar);
+/* Outra aba do mesmo navegador salvou: recarrega os dados, mantendo o perfil e a tela desta aba */
+addEventListener('storage',e=>{
+  if(e.key!==KEY)return;
+  if(!e.newValue){reiniciar.on=true;location.reload();return}
+  if($('#dlg').open||['demanda','cadastro'].includes(S.route.name))return;
+  const v=S.viewer,r=S.route,y=scrollY;
+  try{const d=JSON.parse(e.newValue);S.cases=d.cases;S.cidadaos=d.cidadaos;S.seq=d.seq;S.cancelados=d.cancelados||[]}catch(_){return}
+  const txt=$('#mtxt')?$('#mtxt').value:null;
+  S.viewer=v;S.route=r;salvar.mudo=true;try{render()}finally{salvar.mudo=false}scrollTo(0,y);
+  if(txt!==null&&$('#mtxt'))$('#mtxt').value=txt;
+});
 matchMedia('(min-width:1051px)').addEventListener('change',()=>{if(S.route.name==='painel')render()});
 (async()=>{for(const c of S.cases)if(c.status==='done'&&!c.hash)c.hash=await hashOf(c);if(S.route.name==='comprovante')render()})();
 </script>

@@ -625,7 +625,7 @@ function filtrados(){
 }
 function cardHTML(c){
   const at=ativos(c),fechado=c.status==='done';
-  const flag=c.status!=='wait'?'':c.aptas.length?`<span style="color:var(--ok);font-weight:600">${c.aptas.length} ${c.aptas.length>1?'secretarias aptas':'secretaria apta'}</span>`:'<span style="color:var(--att);font-weight:600">Nenhuma ajuda ofereceu ainda</span>';
+  const flag=c.status!=='wait'?'':c.aptas.length?`<span style="color:var(--ok);font-weight:600">${c.aptas.length} ${c.aptas.length>1?'secretarias aptas':'secretaria apta'}</span>`:'<span style="color:var(--att);font-weight:600">Nenhuma secretaria ofereceu ajuda ainda</span>';
   return `<article class="card u${c.urg}">
     <div class="card-top"><h3>${esc(nomeCid(c))}</h3><span class="chips">${ub(c.urg)}${stChip(c.status)}</span></div>
     <p class="ln"><b>${esc(c.sub)}</b></p>

@@ -1293,7 +1293,7 @@ const TEMAS=[
  ['perda',/enchente|inunda|perdeu|incendio|despej|desaloj|sem casa|desabrig|alagou|desliza|desabou/],
  ['rua',/\brua\b|rodoviaria|praca|dormindo|situacao de rua|abrigo|acolh|albergue/],
  ['vaga',/vaga|aluguel|moradia|casa de passagem|triagem|habitac/],
- ['saude',/saude|\bubs\b|consulta|medic|remedio|pressao|diabet|ferid|\bdor\b|dores|agress|lesao|exame|doente|febre|mental/],
+ ['saude',/saude|\bubs\b|consulta|medic|remedio|pressao|diabet|ferid|\bdor\b|dores|agress|lesao|exame|doente|febre|mental|enfermeir|visita domiciliar|agente comunitari/],
  ['violencia',/violencia|agress|ameaca|ex.?companheiro|medida protetiva|maria da penha/],
  ['crianca',/crianca|filho|filha|bebe|menor de|escola|matricula|creche/],
  ['idoso',/idos|aposent|\bbpc\b/],
@@ -1304,6 +1304,9 @@ const TEMAS=[
  ['quando',/quando|prazo|que dia|que horas|\bdata\b|quanto tempo|previsao|demora|para quando/],
  ['como',/como (proceder|fazer|agir|podemos|posso|devemos|funciona|encaminh)|o que (preciso|precisa|devo|fazer|levar)|procedimento|passo a passo|orienta/],
  ['onde',/\bonde\b|endereco|qual (unidade|ubs|posto|lugar|local)|que (unidade|ubs|posto)/],
+ ['relatorio',/relatorio|laudo|parecer|devolutiva|resultado d[aeo]/],
+ ['quem',/com quem|quem (trata|responde|cuida|e o responsavel|devo procurar)|responsavel|contato|telefone/],
+ ['contesta',/como assim|nao (foi|entendi|era isso|pedi)|mas (eu|o que)|equivoc|confus|nao e isso|errad|nao respondeu|nao tem a ver/],
  ['cidade',/qual cidade|que cidade|municipio|de onde (voces|vcs) sao|araco/],
  ['acolhe',/acolh|abrigo|pernoit|albergue|casa de passagem|dormir|como (seria|sera|e) (o )?(acolh|atend)|regras/],
  ['crise',/suicid|se matar|tirar a (propria )?vida|acabar com (a )?(vida|tudo)|automutil/],
@@ -1316,6 +1319,7 @@ const TEMA_ROT={acolhe:'o acolhimento',perda:'a perda da moradia',semdoc:'a falt
 const rotulos=tg=>['perda','semdoc','rua','acolhe','violencia','saude','emocional','crianca','renda','idoso','docs'].filter(k=>tg.has(k)).slice(0,2).map(k=>TEMA_ROT[k]).join(' e ');
 /* Locais e rotinas (fictícios) do município de Araçoiaba-PE */
 const LOC={ubs:'UBS Centro (Rua da Matriz, 120, Centro, Araçoiaba-PE)',casa:'Casa de Acolhimento Temporário (Rua José Bezerra, 45, Centro, Araçoiaba-PE)',hab:'sede da Secretaria de Habitação, no prédio da Prefeitura de Araçoiaba (Praça da Matriz, s/n, térreo)',esc:'Escola Municipal Centro (Rua da Escola, 30, Centro, Araçoiaba-PE)'};
+const URG_REL={sau:'Como é urgente, adianto hoje um resumo por aqui.',hab:'Como é urgente, adianto hoje um parecer resumido.',edu:'Como é urgente, adianto hoje uma declaração provisória.'};
 const RESP={
  sau:{quando:`Consigo na quarta-feira pela manhã, a partir das 8h, na ${LOC.ubs}. É só dizer na recepção que vem pela Assistência Social; se a pessoa tiver sinais de urgência, como pressão alta, é atendida no mesmo dia.`,
       como:`O caminho é: 1) a pessoa vai à ${LOC.ubs}, de preferência acompanhada pela Assistência; 2) faz o acolhimento na recepção; 3) passa pela classificação de risco com a enfermeira Camila Torres e, se preciso, pela consulta médica; 4) o atendimento fica no prontuário, com acesso restrito. Eu aviso a recepção antes.`,
@@ -1324,6 +1328,8 @@ const RESP={
       acolhe:'Na UBS o acolhimento é feito na recepção, seguido de classificação de risco com a enfermeira. Não precisa de agendamento prévio.',
       docs:'Sem documentos o atendimento na UBS acontece normalmente: o cadastro no SUS é feito na hora, com nome e data de nascimento.',
       status:'O caso está aberto aqui e já avisei a equipe da UBS Centro. Confirmo o horário ainda hoje.',
+      relatorio:'O relatório da visita domiciliar da enfermeira Camila Torres sai até amanhã às 12h, e eu envio por aqui, no chat.',
+      quem:'Pode tratar diretamente comigo, Camila Torres, enfermeira da Atenção Básica, aqui no chat. Na UBS Centro, procure a coordenação.',
       urgente:`Entendido, tratamos como prioridade e peço encaixe ainda hoje na ${LOC.ubs}.`,
       agradece:'Combinado. Se algo mudar, aviso por aqui.'},
  hab:{quando:`A triagem é na próxima terça-feira, às 9h, na ${LOC.hab}. Se for urgente, consigo uma vaga emergencial na ${LOC.casa} por até 3 dias enquanto isso.`,
@@ -1333,6 +1339,8 @@ const RESP={
       acolhe:`Como funciona o acolhimento: a ${LOC.casa} recebe até as 18h e oferece pernoite, refeições, higiene pessoal e guarda de pertences. A permanência emergencial é de até 3 dias e depois segue para a triagem. A pessoa leva a medicação de uso contínuo e o que tiver de documento.`,
       docs:'Falta de documentos não impede a triagem: aceitamos a declaração da Assistência Social e pedimos a 2ª via junto ao cartório.',
       status:'O caso está na fila de triagem de terça. Atualizo aqui assim que houver confirmação de vaga.',
+      relatorio:'O relatório da triagem sai em até 2 dias úteis depois da triagem, e eu anexo aqui.',
+      quem:'Pode tratar comigo, Rafael Lima, técnico de habitação, aqui no chat.',
       urgente:`Entendido, tratamos como prioridade. Posso reservar hoje mesmo uma vaga emergencial na ${LOC.casa}, com entrada até as 18h, enquanto a triagem de terça não acontece. Confirmo aqui assim que reservar.`,
       agradece:'Combinado, seguimos por aqui.'},
  edu:{quando:'Retorno com a vaga confirmada até sexta-feira.',
@@ -1341,6 +1349,8 @@ const RESP={
       cidade:'Somos a Secretaria de Educação de Araçoiaba-PE e cuidamos das matrículas na rede municipal.',
       docs:'Para matricular sem documentos, a escola aceita a declaração da Assistência Social, e a certidão é providenciada depois.',
       status:'Estou verificando a vaga e retorno por aqui.',
+      relatorio:'A declaração escolar sai em até 3 dias úteis, e eu anexo aqui.',
+      quem:'Pode tratar comigo, Marcos Paiva, coordenador pedagógico, aqui no chat.',
       urgente:'Entendido, priorizo a vaga e retorno hoje.',
       agradece:'Combinado, seguimos por aqui.'}
 };
@@ -1349,11 +1359,17 @@ function textoSim(c,s,tipo,ctx){
   const tr=tagsDe(`${c.resumo||''} ${c.justUrg||''} ${c.sub||''}`),tc=tagsDe(ctx||'');
   if(tipo==='ack'){
     if(s==='sau'&&tc.has('crise'))return 'Isso é prioridade máxima. Acionamos agora o CAPS de Araçoiaba para um atendimento ainda hoje. Se houver risco imediato, ligue para o SAMU (192) ou para o CVV (188, 24 horas), e a pessoa não deve ficar sozinha. Avisem aqui a cada novidade.';
+    const pre=tc.has('contesta')?'Desculpe a confusão. ':'',R=RESP[s]||{},esp=[];
+    if(tc.has('contesta'))tc.delete('agradece');   /* "não entendi" não é agradecimento */
+    if(tc.has('relatorio')&&R.relatorio)esp.push(R.relatorio+(tc.has('urgente')?' '+(URG_REL[s]||''):''));
+    if(tc.has('quem')&&R.quem)esp.push(R.quem);
+    if(esp.length)return pre+esp.join(' ');
     const ordem=['urgente','cidade','acolhe','quando','como','onde','docs','status','agradece'];
     const r=ordem.filter(k=>tc.has(k)&&RESP[s]&&RESP[s][k]).slice(0,tc.has('urgente')?1:3).map(k=>RESP[s][k]);   /* urgência responde sozinha; senão, até 3 perguntas */
-    if(r.length)return r.join(' ');
+    if(r.length)return pre+r.join(' ');
     if(s==='sau'&&tc.has('emocional'))return 'Obrigado por avisar. A UBS inclui acolhimento emocional na avaliação e, se for preciso, encaminhamos ao atendimento psicológico no CAPS de Araçoiaba. Já deixo registrado para a consulta de quarta.';
     if(s==='edu'&&tc.has('crianca'))return 'Podemos apoiar com a matrícula. '+RESP.edu.como;
+    if(pre)return pre+'Pode me dizer exatamente o que precisa? Faço chegar à equipe e retorno por aqui ainda hoje.';
     const rot=rotulos(tc);
     return rot?`Obrigado pelo detalhe sobre ${rot}. Anotei e vou alinhar com a minha equipe; retorno por aqui até amanhã.`:'Recebido. Vou verificar com a minha equipe e retorno por aqui até amanhã.';
   }

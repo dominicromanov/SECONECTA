@@ -51,9 +51,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .navi[aria-current=page]::after{bottom:-24px;background:radial-gradient(circle at 0 100%,transparent 23.5px,var(--bg) 24px)}
 .navi:focus-visible{outline-color:#fff;outline-offset:-4px}
 .side-foot{margin-top:auto;padding:0 16px 0 8px}
-.side-foot .reset{margin-top:8px;width:100%;min-height:44px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6);border-radius:8px;font:inherit;font-size:14px;cursor:pointer}
+.side-foot .reset{margin-top:8px;width:100%;min-height:48px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6);border-radius:8px;font:inherit;font-size:14px;cursor:pointer}
 .side-foot .reset:hover{background:rgba(255,255,255,.12)}
 .side-foot .reset:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.side-foot .fim{background:#fff;color:var(--blue);border-color:#fff;font-weight:600}
+.side-foot .fim:hover{background:#E8EDF8}
 .side-foot p{font-size:13px;color:#CFD8F0;border:1px dashed rgba(255,255,255,.45);border-radius:8px;padding:8px 12px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:24px 40px 8px}
 .crumbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--text-2)}
@@ -390,7 +392,7 @@ dialog::backdrop{background:rgba(31,41,55,.55)}
       <div><b>SeConecta</b><span>Sistema de solicitações intersecretariais</span></div>
     </button>
     <nav class="nav" id="nav" aria-label="Principal"></nav>
-    <div class="side-foot"><p>Protótipo v1 · dados fictícios. Salvos neste navegador.</p><button class="reset" onclick="reiniciar()">Reiniciar dados de demonstração</button></div>
+    <div class="side-foot"><p id="sfnote">Protótipo v1 · dados fictícios. Salvos neste navegador.</p><button class="reset" id="btnreset" onclick="reiniciar()">Reiniciar dados de demonstração</button><button class="reset fim" id="btnfim" onclick="finalizarTeste()" hidden>Finalizar teste e enviar resultados</button></div>
   </aside>
   <div>
     <header class="top">
@@ -423,6 +425,10 @@ const dia=s=>s.split(' às ')[0];
 const lista=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' e '+a[a.length-1];
 const kb=n=>n>1048576?(n/1048576).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(n/1024))+' KB';
 const idade=iso=>{const b=new Date(iso+'T12:00'),n=new Date();let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a};
+/* Modo de teste de usabilidade: ?teste=1&p=P01 */
+const QS=new URLSearchParams(location.search);
+const TESTE=QS.get('teste')==='1';
+const PART=(QS.get('p')||'').replace(/[^\w-]/g,'').slice(0,20)||'sem-codigo';
 
 const P={
   grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
@@ -468,7 +474,7 @@ const STATUS={wait:['Aguardando apoio','c-att'],proc:['Em processo','c-info'],do
 const ENT={'Aguardando':'c-att','Em execução':'c-info','Concluída':'c-ok','Inviabilizada':'c-err','Desvinculada':'c-err','Dispensada':'c-neu'};
 const RESOLV=['Concluída','Inviabilizada','Desvinculada','Dispensada'];
 const CHECKS=['Contato com a família verificado','Documentos do cidadão conferidos','Retorno ao cidadão agendado'];
-const KPI=[['abertos','Chats abertos','msg','#B5600C'],['sem','Sem ajuda oferecida','help','#B42318'],['proc','Em processo','clock','#243F8F'],['done','Encerrado','checkCircle','#207245']];
+const KPI=[['abertos','Chats abertos','msg','#B5600C'],['sem','Abertos sem ajuda','help','#B42318'],['proc','Em processo','clock','#243F8F'],['done','Encerrado','checkCircle','#207245']];
 
 function ini(nome){const p=nome.trim().split(/\s+/).filter(w=>!/^(da|de|do|das|dos|e)$/i.test(w));return p.length>1?`${p[0][0]}.${p[p.length-1][0]}.`.toUpperCase():`${p[0][0].toUpperCase()}.`}
 const cid=(id,nome,raw,nasc,consent)=>({id,nome,raw,nasc,consent,ini:ini(nome),excecao:''});
@@ -541,9 +547,9 @@ async function sha(s){
 }
 const hashOf=c=>sha(JSON.stringify({p:prot(c),u:c.urg,s:c.sub,d:c.desfecho,k:c.compromissos,l:c.log}));
 
-function toast(t){const e=$('#toast');e.innerHTML=ic('checkCircle')+`<span><b>${esc(t)}</b></span>`;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('on'),3400)}
+function toast(t){reg('aviso',{txt:t});const e=$('#toast');e.innerHTML=ic('checkCircle')+`<span><b>${esc(t)}</b></span>`;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('on'),3400)}
 function ask(o,cb){
-  const d=$('#dlg');
+  const d=$('#dlg');reg('janela',{titulo:o.title});
   d.innerHTML=`<div class="dlg-b"><h2 id="dlgt">${esc(o.title)}</h2><div>${o.html||''}</div>${o.field?`<div class="field" style="margin-top:24px"><label class="lbl" for="dlgin">${esc(o.field)} *</label><textarea class="inp" id="dlgin" rows="3"></textarea></div>`:''}</div>
   <div class="dlg-f"><button type="button" class="btn btn-secondary" id="dlgc">Voltar</button><button type="button" class="btn ${o.danger?'btn-danger':'btn-primary'}" id="dlgok">${esc(o.ok||'Confirmar')}</button></div>`;
   d.setAttribute('aria-labelledby','dlgt');
@@ -552,7 +558,7 @@ function ask(o,cb){
   $('#dlgc').onclick=()=>{d.close();render()};
   $('#dlgok').onclick=()=>{
     let v='';
-    if(o.field){v=$('#dlgin').value.trim();if(!v){const f=$('#dlgin').closest('.field');f.classList.add('invalid');if(!f.querySelector('.ferr'))f.insertAdjacentHTML('beforeend','<p class="ferr">Erro: preencha este campo antes de continuar.</p>');$('#dlgin').focus();return}}
+    if(o.field){v=$('#dlgin').value.trim();if(!v){reg('erro_validacao',{itens:[o.field+' vazio']});const f=$('#dlgin').closest('.field');f.classList.add('invalid');if(!f.querySelector('.ferr'))f.insertAdjacentHTML('beforeend','<p class="ferr">Erro: preencha este campo antes de continuar.</p>');$('#dlgin').focus();return}}
     d.close();cb(v);
   };
 }
@@ -560,7 +566,7 @@ function showErrors(list){
   $$('.invalid').forEach(e=>e.classList.remove('invalid'));$$('.ferr').forEach(e=>e.remove());
   const box=$('#errsum');
   if(!list.length){box.hidden=true;return false}
-  box.hidden=false;
+  box.hidden=false;reg('erro_validacao',{itens:list.map(e=>e.msg)});
   box.innerHTML=`${ic('alert')}<div><b>${list.length===1?'Falta 1 item para continuar':`Faltam ${list.length} itens para continuar`}</b><ul>${list.map(e=>`<li><a href="#${e.id}">${esc(e.msg)}</a></li>`).join('')}</ul></div>`;
   list.forEach(e=>{const el=document.getElementById(e.id);if(!el)return;const f=el.closest('.field')||el;f.classList.add('invalid');f.insertAdjacentHTML('beforeend',`<p class="ferr">Erro: ${esc(e.msg.charAt(0).toLowerCase()+e.msg.slice(1))}</p>`)});
   box.focus();box.scrollIntoView({block:'start',behavior:'smooth'});return true;
@@ -571,7 +577,7 @@ function go(name,id){
   if(name==='caso'){const c=C(id);name=c.status==='wait'?'chat':'timeline'}
   S.route={name,id};render();window.scrollTo(0,0);$('#main').focus({preventScroll:true});
 }
-function setViewer(v){S.viewer=v;render()}
+function setViewer(v){reg('perfil',{de:S.viewer,para:v});S.viewer=v;render()}
 function shell(){
   const v=S.viewer,r=S.route.name,cur=['chat','timeline','comprovante'].includes(r)?'painel':r;
   const items=[['painel','Painel geral','grid']].concat([['demanda','Nova demanda','filePlus'],['cadastro','Novo cadastro','userPlus']]);
@@ -590,9 +596,11 @@ function render(){
   if(r.id&&!C(r.id)){S.route={name:'painel'};return render()}
   if(r.name==='chat')marcaVista(C(r.id));
   shell();
+  const tk=r.name+(r.id||'')+S.viewer;if(tk!==render.ult){render.ult=tk;reg('tela',{caso:r.id})}
   const views={painel:vPainel,cadastro:vCadastro,demanda:vDemanda,chat:()=>vChat(C(r.id)),timeline:()=>vTimeline(C(r.id)),comprovante:()=>vComp(C(r.id))};
   $('#main').innerHTML=views[r.name]();
   if(r.name==='demanda')initDemanda();
+  if(r.name==='cadastro')avisoRasc('cadastro',restauraRasc('cadastro'));
   if(r.name==='chat'){const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight}
   salvar();
 }
@@ -659,7 +667,8 @@ function vPainel(){
 /* ===== Tela 6.1: Cadastro do cidadão ===== */
 function vCadastro(){
   return `<div class="page-h"><div><p class="lab">Primeiro atendimento</p><h1>Cadastro do cidadão</h1><p class="t2">Feito uma vez. O nível de sigilo é definido a cada demanda, na abertura.</p></div>
-    <button class="lnk" onclick="exemploCad()">Preencher com exemplo</button></div>
+    ${TESTE?'':'<button class="lnk" onclick="exemploCad()">Preencher com exemplo</button>'}</div>
+  <div id="rasc"></div>
   <div id="errsum" class="alert a-err errsum" tabindex="-1" hidden></div>
   <form onsubmit="return false" novalidate>
   <section class="box"><div class="box-h"><p class="lab">1. Dados básicos e identificação civil (sem histórico prévio)</p><span class="sm t2">* obrigatório</span></div><div class="grid2">
@@ -673,7 +682,7 @@ function vCadastro(){
     <div class="field" id="f-cons"><label class="choice"><input type="checkbox" id="cons"><div><b>Consentimento livre e esclarecido do assistido *</b><span>O cidadão foi informado de que nome, idade, CPF e a demanda são compartilhados só com as secretarias municipais, e pode revogar a qualquer momento.</span></div></label></div>
     <p class="hint">O que será compartilhado em cada caso (nível de sigilo) é escolhido na abertura da demanda.</p>
   </section>
-  <div class="foot"><button type="button" class="btn btn-secondary" onclick="go('painel')">Cancelar</button>
+  <div class="foot"><button type="button" class="btn btn-secondary" onclick="cancelarForm('cadastro')">Cancelar</button>
     <div class="actions"><button type="button" class="btn btn-secondary" onclick="salvarCad(false)">Salvar cadastro apenas</button><button type="button" class="btn btn-primary" onclick="salvarCad(true)">Salvar e iniciar encaminhamento</button></div></div>
   </form>`;
 }
@@ -686,7 +695,7 @@ function cpfInput(el){
 function exemploCad(){
   $('#nome').value='Luiz Santos da Silva';const c=$('#cpf');c.value='44455566677';cpfInput(c);
   $('#nasc').value='1963-04-12';$('#mae').value='Josefa Santos';$('#ctt').value='(81) 98765-4321';
-  $('#cons').checked=true;
+  $('#cons').checked=true;guardaRasc();
 }
 function salvarCad(abrir){
   const nome=$('#nome').value.trim(),raw=$('#cpf').value.replace(/\D/g,''),nasc=$('#nasc').value;
@@ -698,8 +707,8 @@ function salvarCad(abrir){
   if(!$('#cons').checked)e.push({id:'f-cons',msg:'Registre o consentimento do cidadão.'});
   if(showErrors(e))return;
   const z=cid('z'+(S.cidadaos.length+1),nome,raw,nasc,true);
-  S.cidadaos.push(z);S.draft=z.id;
-  toast(`Registro salvo: cadastro de ${z.ini}.`);
+  S.cidadaos.push(z);S.draft=z.id;apagaRasc('cadastro');
+  toast(`Cadastro de ${z.ini} salvo.`);
   go(abrir?'demanda':'painel');
 }
 
@@ -707,7 +716,8 @@ function salvarCad(abrir){
 function vDemanda(){
   S.files=[];const outras=lista(parcs({solicitante:S.viewer}).map(k=>SECS[k].nome));
   return `<div class="page-h"><div><p class="lab">Nova demanda</p><h1>Formulário de abertura da demanda</h1><p class="t2">Ao criar, ${outras} recebem a notificação. Cada uma decide, dentro do chat, se participa. O chat abre em "Aguardando apoio".</p></div>
-    <button class="lnk" onclick="exemploDem()">Preencher com exemplo</button></div>
+    ${TESTE?'':'<button class="lnk" onclick="exemploDem()">Preencher com exemplo</button>'}</div>
+  <div id="rasc"></div>
   <div id="errsum" class="alert a-err errsum" tabindex="-1" hidden></div>
   <form onsubmit="return false" novalidate>
   <section class="box"><div class="box-h"><p class="lab">Categorização obrigatória</p><span class="sm t2">* obrigatório</span></div><div class="grid2">
@@ -739,10 +749,10 @@ function vDemanda(){
     <div class="field"><span class="lbl">Anexos oficiais</span>
       <label class="drop">${ic('upload',28)}<div><b>Upload de anexos oficiais</b>Laudos, pareceres, receitas</div><input type="file" multiple aria-label="Upload de anexos oficiais" onchange="addFiles(this,'files','dflist')"></label><div class="flist" id="dflist"></div></div>
   </section>
-  <div class="foot"><button type="button" class="btn btn-secondary" onclick="go('painel')">Cancelar</button><button type="button" class="btn btn-primary" onclick="criarDemanda()">Criar e instanciar demanda</button></div>
+  <div class="foot"><button type="button" class="btn btn-secondary" onclick="cancelarForm('demanda')">Cancelar</button><button type="button" class="btn btn-primary" onclick="criarDemanda()">Criar e instanciar demanda</button></div>
   </form>`;
 }
-function initDemanda(){if(S.draft)pickCid(S.draft)}
+function initDemanda(){const rec=restauraRasc('demanda');if(S.draft)pickCid(S.draft);avisoRasc('demanda',rec)}
 function buscaCid(){
   const q=$('#dbusca').value.trim().toLowerCase(),d=q.replace(/\D/g,''),u=$('#sug');
   $('#dcid').value='';showCid(false);
@@ -751,7 +761,7 @@ function buscaCid(){
   u.innerHTML=r.length?r.map(z=>`<li><button type="button" onclick="pickCid('${z.id}')"><b>${esc(z.ini)}</b><span class="t2">${idade(z.nasc)} anos · CPF ${cpfMask(z.raw)}</span></button></li>`).join('')
     :`<li style="padding:12px 16px" class="t2">Nenhum cidadão encontrado. <button type="button" class="lnk" style="display:inline-flex;width:auto;min-height:0;border:0;padding:0" onclick="go('cadastro')">Fazer novo cadastro</button></li>`;
 }
-function pickCid(id){const z=CID(id);$('#dcid').value=id;$('#dbusca').value=`${z.ini} · CPF ${cpfMask(z.raw)}`;$('#sug').hidden=true;showCid(true)}
+function pickCid(id){const z=CID(id);$('#dcid').value=id;$('#dbusca').value=`${z.ini} · CPF ${cpfMask(z.raw)}`;$('#sug').hidden=true;showCid(true);guardaRasc()}
 function sigChange(){
   const r=(document.querySelector('[name=sig]:checked')||{}).value==='restrito',ts=$('#tsaude'),ta=$('#tassist');
   if(!ts.disabled){ts.checked=ta.checked=r}
@@ -770,7 +780,8 @@ function subOpts(){
   if(i===''){s.disabled=true;s.innerHTML='<option value="">Escolha o tópico primeiro</option>';return}
   s.disabled=false;s.innerHTML='<option value="">Selecionar subtópico</option>'+TOPICS[i].subs.map(([n,ex],j)=>`<option value="${j}">${esc(n)}${ex?` (${esc(ex)})`:''}</option>`).join('');
 }
-function addFiles(inp,key,box){[...inp.files].forEach(f=>S[key].push({n:f.name,s:f.size}));inp.value='';$('#'+box).innerHTML=S[key].map(a=>`<span class="att">${ic('file',16)}${esc(a.n)} <small>${kb(a.s)}</small></span>`).join('')}
+const fileList=arr=>arr.map(a=>`<span class="att">${ic('file',16)}${esc(a.n)} <small>${kb(a.s)}</small></span>`).join('');
+function addFiles(inp,key,box){[...inp.files].forEach(f=>S[key].push({n:f.name,s:f.size}));inp.value='';$('#'+box).innerHTML=fileList(S[key]);if(key==='files')guardaRasc()}
 function exemploDem(){
   let z=S.cidadaos.find(c=>c.raw==='44455566677');
   if(!z){z=cid('z'+(S.cidadaos.length+1),'Luiz Santos da Silva','44455566677','1963-04-12',true);S.cidadaos.push(z);S.draft=z.id;render();return exemploDem()}
@@ -779,7 +790,7 @@ function exemploDem(){
   $('#duj').value='Idoso de 63 anos dormindo na rodoviária desde o despejo, na quinta-feira. Tem pressão alta e está sem a medicação.';
   pickCid(z.id);
   document.querySelector('[name=sig][value=restrito]').checked=true;sigChange();
-  $('#dres').value='Precisamos de abrigo e alimentação urgente para o Sr. L.S., 63 anos, trabalhador rural. Perdeu a casa onde morava de aluguel e está dormindo na rodoviária. Pedimos vaga em acolhimento transitório e avaliação de saúde, com retomada da medicação para pressão.';
+  setTimeout(guardaRasc);$('#dres').value='Precisamos de abrigo e alimentação urgente para o Sr. L.S., 63 anos, trabalhador rural. Perdeu a casa onde morava de aluguel e está dormindo na rodoviária. Pedimos vaga em acolhimento transitório e avaliação de saúde, com retomada da medicação para pressão.';
 }
 function criarDemanda(){
   const z=CID($('#dcid').value),t=$('#dtop').value,sj=$('#dsub').value,v=S.viewer;
@@ -800,7 +811,7 @@ function criarDemanda(){
     msgs:[{de:v,txt:res,hora:h,anexos:[...S.files]}],
     log:[{t:h,txt:`Demanda aberta pela ${SECS[v].nome}`},{t:h,txt:notifTxt({solicitante:v})}]};
   if(!z.consent)c.log.push({t:h,txt:`Encaminhamento por exceção, sem consentimento: ${z.excecao}`});
-  S.cases.push(c);S.draft=null;S.files=[];
+  S.cases.push(c);S.draft=null;S.files=[];apagaRasc('demanda');
   toast(`Demanda #${prot(c)} criada. Notificação entregue.`);
   go('chat',c.id);
 }
@@ -835,7 +846,7 @@ function participar(id){
   c.env[v]='ativo';const h=fmt();
   c.msgs.push({evt:true,txt:`${SECS[v].nome} passou a participar ativamente`,hora:h});
   c.log.push({t:h,txt:`${SECS[v].nome} passou a participar ativamente`});
-  toast('Registro salvo: sua secretaria agora participa ativamente.');render();
+  toast('Sua secretaria agora participa ativamente.');render();
 }
 function vChat(c){
   const v=S.viewer,isSol=v===c.solicitante,papel=isSol?'sol':stEnv(c,v),aberto=c.status==='wait',fechado=c.status==='done',sol=c.solicitante;
@@ -854,11 +865,11 @@ function vChat(c){
       ${!fechado&&!isSol&&papel==='passivo'?`<button class="btn btn-primary btn-block" onclick="participar('${c.id}')">${ic('plus')}Participar</button><p class="hint">Você está em modo passivo (leitura). Ao participar, sua secretaria passa a Ativo e pode escrever no chat.</p>`:''}
       ${aberto&&papel==='ativo'&&!c.aptas.includes(v)?`<button class="btn btn-primary btn-block" onclick="apta('${c.id}')">${ic('check')}Apta para ajudar</button><p class="hint">Sua secretaria assume uma entrega e passa a responder por ela.</p>`:''}
       ${aberto&&papel==='ativo'&&c.aptas.includes(v)?`<div class="alert a-ok">${ic('checkCircle')}<span>Sua secretaria está apta. Aguardando o aceite da solicitante.</span></div>`:''}
-      ${aberto&&isSol&&!c.aptas.length?`<div class="divider" style="margin:16px 0"></div><button class="lnk teal" onclick="simular('${c.id}')">Simular resposta das secretarias</button><p class="hint" style="margin-top:0">Atalho da demonstração. Também é possível trocar o perfil, abrir o chat e participar como cada secretaria.</p>`:''}
+      ${aberto&&isSol&&!c.aptas.length&&!TESTE?`<div class="divider" style="margin:16px 0"></div><button class="lnk teal" onclick="simular('${c.id}')">Simular resposta das secretarias</button><p class="hint" style="margin-top:0">Atalho da demonstração. Também é possível trocar o perfil, abrir o chat e participar como cada secretaria.</p>`:''}
     </aside>
     <section class="box" style="margin:0;padding:0" aria-label="Conversa">
       <div class="msgs" id="msgs" tabindex="0" aria-label="Mensagens">${msgs}</div>
-      <div class="composer">${escreve?`<label class="sr" for="mtxt">Mensagem</label><textarea class="inp" id="mtxt" rows="2" placeholder="Digite uma mensagem…" style="min-height:80px"></textarea>
+      <div class="composer">${escreve?`<label class="sr" for="mtxt">Mensagem</label><textarea class="inp" id="mtxt" rows="2" placeholder="Digite uma mensagem…" style="min-height:80px" aria-describedby="mdica" onkeydown="teclaMsg(event,'${c.id}')"></textarea><p class="hint" id="mdica" style="margin-top:4px">Enter envia · Shift+Enter quebra a linha</p>
         <div class="composer-f"><div><span class="btn btn-secondary filebtn">${ic('clip')}Anexar PDF, laudos, receitas<input type="file" multiple aria-label="Anexar PDF, laudos, receitas" onchange="addFiles(this,'cfiles','cflist')"></span><div class="flist" id="cflist">${S.cfiles.map(a=>`<span class="att">${ic('file',16)}${esc(a.n)}</span>`).join('')}</div></div>
         <button class="btn btn-primary" onclick="enviar('${c.id}')">${ic('send')}Enviar</button></div>`
       :fechado?`<div class="alert a-info">${ic('lock')}<span>Chat encerrado em ${esc(c.encerradoEm||'')}. O histórico foi mantido para consulta, mas não é possível enviar novas mensagens.</span></div>`
@@ -872,15 +883,17 @@ function vChat(c){
 }
 function enviar(id){
   const c=C(id),t=$('#mtxt').value.trim();if(!t&&!S.cfiles.length){$('#mtxt').focus();return}
-  c.msgs.push({de:S.viewer,txt:t||'Arquivo anexado.',hora:fmt(),anexos:[...S.cfiles]});S.cfiles=[];render();
+  c.msgs.push({de:S.viewer,txt:t||'Arquivo anexado.',hora:fmt(),anexos:[...S.cfiles]});S.cfiles=[];reg('mensagem_enviada',{caso:id});render();
+  const m=$('#mtxt');if(m)m.focus();
 }
+function teclaMsg(e,id){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();enviar(id)}}
 function apta(id,sec){
   const c=C(id),s=sec||S.viewer;if(c.aptas.includes(s))return;
   const acolh=c.sub==='Acolhimento institucional transitório';
   const titulo=acolh?(s==='hab'?'Acolhimento transitório':s==='sau'?'Consultas e retomada da medicação':'Apoio da Educação'):`Apoio da ${SECS[s].nome}`;
   c.aptas.push(s);c.compromissos.push({sec:s,titulo,status:'Aguardando',just:''});
   const h=fmt();c.msgs.push({evt:true,txt:`${SECS[s].nome} declarou-se apta a ajudar`,hora:h});c.log.push({t:h,txt:`${SECS[s].nome} declarou-se apta a ajudar`});
-  if(!sec){toast('Registro salvo: sua secretaria está apta.');render()}
+  if(!sec){toast('Sua secretaria está apta.');render()}
 }
 function simular(id){
   const c=C(id),acolh=c.sub==='Acolhimento institucional transitório';
@@ -902,13 +915,13 @@ function aceitar(id){
   ask({title:'Confirmar aceite e iniciar processo?',ok:'Confirmar aceite',html:`<p>${lista(c.aptas.map(s=>SECS[s].nome))} ${c.aptas.length>1?'passam':'passa'} a responder pelas entregas. O status muda para "Em processo" e o acompanhamento segue na linha do tempo. O chat continua aberto para consultas até o encerramento do caso.</p>${fora.length?`<p style="margin-top:12px">${lista(fora.map(s=>SECS[s].nome))} não se declarou apta e fica fora das entregas.</p>`:''}`},()=>{
     c.status='proc';c.etapa=3;c.aceiteEm=fmt();logPush(c,`Aceite de cooperação confirmado pela ${SECS[c.solicitante].nome}; processo iniciado`);
     c.msgs.push({evt:true,txt:'Aceite confirmado: processo iniciado',hora:c.aceiteEm});
-    toast('Registro salvo: processo iniciado.');go('timeline',id);
+    toast('Processo iniciado.');go('timeline',id);
   });
 }
 function cancelar(id){
   ask({title:'Cancelar esta instância?',danger:true,ok:'Cancelar instância',field:'Motivo do cancelamento',html:'<p>As secretarias acionadas são avisadas e a demanda sai do painel. O motivo fica registrado.</p>'},m=>{
     const c=C(id);S.cancelados=(S.cancelados||[]).concat({id,prot:prot(c),por:SECS[c.solicitante].nome,motivo:m,em:fmt()});
-    S.cases=S.cases.filter(c=>c.id!==id);toast('Registro salvo: instância cancelada.');go('painel');
+    S.cases=S.cases.filter(c=>c.id!==id);toast('Instância cancelada.');go('painel');
   });
 }
 
@@ -943,8 +956,8 @@ function vTimeline(c){
       ${cards?`<div class="ents">${cards}</div>`:'<p class="t2">Nenhuma secretaria assumiu entrega ainda.</p>'}</section>
     <aside>${dados}${priv}</aside></div>
   <div class="tlbar"><span class="t2">${dica(c)}</span>
-    <button class="btn btn-primary" onclick="atualizar('${c.id}')">Atualizar etapa</button>
-    ${isSol?`<button class="btn btn-secondary" onclick="salvar();toast('Registro salvo: alterações da camada privada.')">Salvar alterações</button>`:''}</div>`;
+    ${(ac=>ac?`<button class="btn btn-primary" onclick="${ac[1]}">${ac[0]}</button>`:'')(acaoEtapa(c))}
+    ${isSol?`<button class="btn btn-secondary" onclick="salvar();toast('Alterações da camada privada salvas.')">Salvar alterações</button>`:''}</div>`;
 }
 function dica(c){
   const v=S.viewer,isSol=v===c.solicitante;
@@ -952,21 +965,34 @@ function dica(c){
   if(c.status==='done')return `Caso encerrado em ${esc(c.encerradoEm)}. Desfecho: ${esc(c.desfecho)}.`;
   const pend=c.compromissos.filter(x=>!RESOLV.includes(x.status));
   if(c.etapa===3){
-    if(isSol)return pend.length?`Entregas pendentes: ${lista(pend.map(x=>SECS[x.sec].nome))}.`:'Todas as entregas resolvidas. Atualize a etapa para a devolutiva.';
+    if(isSol)return pend.length?`Aguardando a entrega de ${lista(pend.map(x=>SECS[x.sec].nome))}. Em caso de atraso, use "Forçar avanço autônomo" na camada privada.`:'Todas as entregas foram resolvidas. Avance para a devolutiva ao cidadão.';
+    if(!c.compromissos.some(x=>x.sec===v))return 'Sua secretaria não assumiu entrega neste caso. Você acompanha pela linha do tempo.';
     const mine=c.compromissos.find(x=>x.sec===v&&!RESOLV.includes(x.status));
-    return mine?'Atualize a etapa para registrar a situação da entrega da sua secretaria.':'A parte da sua secretaria já foi registrada.';
+    return mine?'Registre a situação da entrega da sua secretaria.':'A parte da sua secretaria já foi registrada. Aguarde as demais secretarias.';
   }
-  if(c.etapa===4)return isSol?'Atualize a etapa para registrar a devolutiva ao cidadão.':`A ${SECS[c.solicitante].nome} está fazendo a devolutiva ao cidadão.`;
-  return isSol?'Atualize a etapa para registrar o desfecho e emitir o comprovante.':`A ${SECS[c.solicitante].nome} vai registrar o desfecho.`;
+  if(c.etapa===4)return isSol?'Registre como a entrega foi feita ao cidadão.':`A ${SECS[c.solicitante].nome} está fazendo a devolutiva ao cidadão.`;
+  return isSol?'Registre o desfecho para encerrar o caso e emitir o comprovante.':`A ${SECS[c.solicitante].nome} vai registrar o desfecho.`;
+}
+/* Botão da barra da linha do tempo: só aparece quando há algo a fazer */
+function acaoEtapa(c){
+  const v=S.viewer,isSol=v===c.solicitante,at=`atualizar('${c.id}')`;
+  if(c.status==='done')return ['Ver comprovante',`go('comprovante','${c.id}')`];
+  if(c.status==='wait')return ['Ir para o chat',`go('chat','${c.id}')`];
+  if(c.etapa===3){
+    if(!isSol)return c.compromissos.some(x=>x.sec===v&&!RESOLV.includes(x.status))?['Atualizar entrega da minha secretaria',at]:null;
+    return c.compromissos.some(x=>!RESOLV.includes(x.status))?null:['Avançar para a devolutiva',at];
+  }
+  if(!isSol)return null;
+  return c.etapa===4?['Registrar devolutiva',at]:['Registrar desfecho e encerrar',at];
 }
 function painel(o){
   const d=$('#dlg');
   d.innerHTML=`<div class="dlg-b"><h2 id="dlgt">${esc(o.title)}</h2>${o.html||''}<div id="dlgerr"></div></div>
   <div class="dlg-f"><button type="button" class="btn btn-secondary" id="dlgc">${o.ok?'Voltar':'Fechar'}</button>${o.ok?`<button type="button" class="btn ${o.danger?'btn-danger':'btn-primary'}" id="dlgok">${esc(o.ok)}</button>`:''}</div>`;
-  d.setAttribute('aria-labelledby','dlgt');d.oncancel=()=>render();d.showModal();
+  d.setAttribute('aria-labelledby','dlgt');d.oncancel=()=>render();d.showModal();reg('janela',{titulo:o.title});
   if(o.init)o.init();
   $('#dlgc').onclick=()=>{d.close();render()};
-  if(o.ok)$('#dlgok').onclick=()=>{const er=o.run();if(er){$('#dlgerr').innerHTML=`<p class="ferr" style="margin-top:16px">Erro: ${esc(er)}</p>`;return}d.close()};
+  if(o.ok)$('#dlgok').onclick=()=>{const er=o.run();if(er){reg('erro_validacao',{itens:[er]});$('#dlgerr').innerHTML=`<p class="ferr" style="margin-top:16px">Erro: ${esc(er)}</p>`;return}d.close()};
 }
 function atualizar(id){
   const c=C(id),v=S.viewer,isSol=v===c.solicitante;
@@ -984,16 +1010,16 @@ function atualizar(id){
         if(st==='Inviabilizada'&&!j)return 'a justificativa é obrigatória para inviabilizar.';
         x.status=st;x.just=st==='Inviabilizada'?j:'';
         logPush(c,`${SECS[x.sec].nome}: ${st==='Concluída'?`entrega concluída (${x.titulo})`:st==='Inviabilizada'?`entrega inviabilizada. Motivo: ${j}`:`entrega ${st.toLowerCase()}`}`);
-        toast(`Registro salvo: entrega ${st.toLowerCase()}.`);render()}});
+        toast(`Entrega ${st.toLowerCase()}.`);render()}});
   }
   if(!isSol)return painel({title:'Etapa conduzida pela solicitante',html:`<p>${dica(c)}</p>`});
   if(c.etapa===3){
     if(pend.length)return painel({title:'Ainda há entregas pendentes',html:`<p>${lista(pend.map(x=>SECS[x.sec].nome))} ainda não ${pend.length>1?'concluíram':'concluiu'} a entrega. Cada secretaria atualiza a própria entrega.</p><p style="margin-top:12px">Em caso de atraso ou omissão, use "Forçar avanço autônomo" na camada privada.</p>`});
-    return painel({title:'Avançar para a etapa 4?',ok:'Avançar para devolutiva',html:'<p>Todas as entregas foram resolvidas. A próxima etapa é a devolutiva e entrega ao cidadão.</p>',run(){c.etapa=4;logPush(c,'Execução concluída; devolutiva ao cidadão iniciada');toast('Registro salvo: etapa 4 iniciada.');render()}});
+    return painel({title:'Avançar para a etapa 4?',ok:'Avançar para devolutiva',html:'<p>Todas as entregas foram resolvidas. A próxima etapa é a devolutiva e entrega ao cidadão.</p>',run(){c.etapa=4;logPush(c,'Execução concluída; devolutiva ao cidadão iniciada');toast('Etapa 4 iniciada.');render()}});
   }
   if(c.etapa===4)return painel({title:'Etapa 4 · Devolutiva e entrega',ok:'Registrar devolutiva',
     html:`<div class="field" style="margin-top:16px"><label class="lbl" for="entr">Como a entrega foi feita ao cidadão? *</label><textarea class="inp" id="entr" rows="3" placeholder="Ex.: termo de acolhimento e encaminhamento da UBS entregues em mãos no CRAS."></textarea></div>`,
-    run(){const t=$('#entr').value.trim();if(!t)return 'descreva como a entrega foi feita.';c.entrega=t;c.etapa=5;logPush(c,`Devolutiva ao cidadão registrada: ${t}`);toast('Registro salvo: devolutiva.');render()}});
+    run(){const t=$('#entr').value.trim();if(!t)return 'descreva como a entrega foi feita.';c.entrega=t;c.etapa=5;logPush(c,`Devolutiva ao cidadão registrada: ${t}`);toast('Devolutiva registrada.');render()}});
   const ok=c.compromissos.filter(x=>x.status==='Concluída').length,t=c.compromissos.length,sug=ok===t?0:ok>0?1:2;
   return painel({title:'Etapa 5 · Desfecho e encerramento',ok:'Encerrar e emitir comprovante',
     html:`<div class="field" style="margin-top:16px"><label class="lbl" for="desf">Status final *</label><select class="inp" id="desf">${['Atendido integralmente','Atendido parcialmente','Indeferido'].map((o,i)=>`<option ${i===sug?'selected':''}>${o}</option>`).join('')}</select><p class="hint">${ok} de ${t} entregas concluídas.</p></div>`,
@@ -1004,14 +1030,14 @@ function forcar(id){
   const entregou=x=>c.compromissos.some(y=>y.sec===x.sec&&y.status==='Concluída');
   ask({title:'Forçar avanço autônomo?',danger:true,ok:'Forçar avanço',field:'Motivo',html:`<p>As pendências serão tratadas assim:</p><ul>${pend.map(x=>`<li>${SECS[x.sec].nome}: ${esc(x.titulo)} → <b>${entregou(x)?'item dispensado; a secretaria mantém o que já entregou':'secretaria desvinculada por não ter nenhuma entrega'}</b></li>`).join('')}</ul><p>O gestor da secretaria desvinculada é avisado, e tudo vai para o histórico de auditoria.</p>`},m=>{
     pend.forEach(x=>{const e=entregou(x);x.status=e?'Dispensada':'Desvinculada';x.just=`Avanço autônomo: ${m}`;logPush(c,e?`${SECS[x.sec].nome}: item dispensado por avanço autônomo`:`${SECS[x.sec].nome}: desvinculada por omissão (nenhuma entrega); gestor avisado`)});
-    c.etapa=4;logPush(c,`Avanço autônomo pela ${SECS[c.solicitante].nome}. Motivo: ${m}`);toast('Registro salvo: avanço autônomo.');render();
+    c.etapa=4;logPush(c,`Avanço autônomo pela ${SECS[c.solicitante].nome}. Motivo: ${m}`);toast('Avanço autônomo registrado.');render();
   });
 }
 async function encerrar(id,desf){
   const c=C(id);c.desfecho=desf;c.encerradoEm=fmt();c.status='done';
   c.msgs.push({evt:true,txt:'Caso encerrado: chat bloqueado, histórico mantido',hora:c.encerradoEm});
   logPush(c,`Caso encerrado: ${c.desfecho.toLowerCase()}`);
-  c.hash=await hashOf(c);toast('Registro salvo: comprovante emitido.');go('comprovante',id);
+  c.hash=await hashOf(c);toast('Comprovante emitido.');go('comprovante',id);
 }
 
 /* ===== Tela 6: Comprovante ===== */
@@ -1068,18 +1094,144 @@ function carregar(){
     let ui=null;try{ui=JSON.parse(sessionStorage.getItem(KEY+':ui')||'null')}catch(e){}
     if(!ui)try{ui=JSON.parse(localStorage.getItem(KEY+':ui')||'null')}catch(e){}
     if(ui&&SECS[ui.viewer]){S.viewer=ui.viewer;S.route=ui.route||{name:'painel'}}
-    if(S.route.name==='demanda'||S.route.name==='cadastro')S.route={name:'painel'};
     return true;
   }catch(e){return false}
 }
-function reiniciar(){
-  if(!confirm('Apagar tudo o que foi feito e voltar aos dados iniciais de demonstração?'))return;
-  reiniciar.on=true;try{localStorage.removeItem(KEY);localStorage.removeItem(KEY+':ui');sessionStorage.removeItem(KEY+':ui')}catch(e){}
-  location.reload();
+function apagaTudo(){
+  for(const st of [localStorage,sessionStorage])try{[KEY,KEY+':ui',FORMKEY,LOGKEY].forEach(k=>st.removeItem(k))}catch(e){}
 }
+function reiniciar(){
+  ask({title:'Reiniciar os dados de demonstração?',danger:true,ok:'Reiniciar dados',html:'<p>Tudo o que foi feito neste navegador será apagado e os casos de exemplo voltam ao estado inicial. As outras abas abertas também recarregam.</p>'},()=>{
+    reiniciar.on=true;apagaTudo();location.reload();
+  });
+}
+
+/* ===== Rascunho dos formulários (sobrevive ao F5 e à troca de perfil) ===== */
+const FORMKEY=KEY+':rascunho';
+function lerRasc(){
+  let d=null;try{d=JSON.parse(sessionStorage.getItem(FORMKEY)||'null')}catch(e){}
+  if(!d)try{d=JSON.parse(localStorage.getItem(FORMKEY)||'null')}catch(e){}
+  return d||{};
+}
+function gravarRasc(d){const s=JSON.stringify(d);try{sessionStorage.setItem(FORMKEY,s)}catch(e){}try{localStorage.setItem(FORMKEY,s)}catch(e){}}
+function campos(){
+  const o={};
+  $$('#main form input[id],#main form select[id],#main form textarea[id]').forEach(el=>{if(el.type==='file')return;o[el.id]=el.type==='checkbox'?el.checked:el.value});
+  $$('#main form input[type=radio]:checked').forEach(el=>o['@'+el.name]=el.value);
+  return o;
+}
+const temConteudo=v=>Object.entries(v||{}).some(([k,x])=>k!=='@sig'&&x);
+function guardaRasc(){
+  const r=S.route.name;if((r!=='cadastro'&&r!=='demanda')||reiniciar.on||restauraRasc.on||!$('#main form'))return;
+  const d=lerRasc(),v=campos();
+  if(temConteudo(v)||(r==='demanda'&&S.files.length))d[r]={v,files:r==='demanda'?S.files:[]};else delete d[r];
+  gravarRasc(d);
+}
+function apagaRasc(r){const d=lerRasc();delete d[r];gravarRasc(d)}
+function restauraRasc(r){
+  restauraRasc.on=true;try{return aplicaRasc(r)}finally{restauraRasc.on=false}
+}
+function aplicaRasc(r){
+  const d=lerRasc()[r];if(!d||!d.v)return false;const v=d.v;
+  if(r==='demanda'){
+    if(v.dtop!==undefined&&v.dtop!==''){$('#dtop').value=v.dtop;subOpts();$('#dsub').value=v.dsub||''}
+    if(v.dcid&&CID(v.dcid))pickCid(v.dcid);else if(v.dbusca)$('#dbusca').value=v.dbusca;
+    S.files=d.files||[];$('#dflist').innerHTML=fileList(S.files);
+  }
+  for(const [k,x] of Object.entries(v)){
+    if(k[0]==='@'){const el=$$(`#main [name="${k.slice(1)}"]`).find(e=>e.value===x);if(el)el.checked=true;continue}
+    if(['dtop','dsub','dcid','dbusca'].includes(k))continue;
+    const el=document.getElementById(k);if(!el||el.disabled)continue;
+    if(el.type==='checkbox')el.checked=!!x;else el.value=x;
+  }
+  if(r==='cadastro'&&v.cpf)cpfInput($('#cpf'));
+  return temConteudo(v)||(d.files||[]).length>0;
+}
+function avisoRasc(r,rec){
+  const e=$('#rasc');if(!e)return;
+  e.innerHTML=rec?`<div class="alert a-info" role="status" style="margin-bottom:24px">${ic('info')}<span><b>Recuperamos o que você já tinha preenchido.</b> <button type="button" class="lnk" onclick="descartarRasc('${r}')">Descartar e começar de novo</button></span></div>`:'';
+}
+function descartarRasc(r){apagaRasc(r);S.files=[];S.draft=null;reg('rascunho_descartado',{form:r});render()}
+function cancelarForm(r){apagaRasc(r);S.files=[];go('painel')}
+$('#main').addEventListener('input',guardaRasc);
+$('#main').addEventListener('change',guardaRasc);
+
+/* ===== Registro do teste de usabilidade (só com ?teste=1) =====
+   Grava telas, botões, janelas, avisos e erros. Não grava o texto digitado nos campos. */
+const LOGKEY=KEY+':teste';
+let LOG=null;
+function regIni(){
+  if(!TESTE)return;
+  try{LOG=JSON.parse(localStorage.getItem(LOGKEY)||'null')}catch(e){LOG=null}
+  if(!LOG||LOG.participante!==PART){
+    apagaTudo();   /* novo participante neste navegador: começa com os dados iniciais */
+    LOG={participante:PART,inicio:new Date().toISOString(),navegador:navigator.userAgent,tela:`${innerWidth}x${innerHeight}`,url:location.href,eventos:[],novo:true};
+  }
+}
+function reg(tipo,info){
+  if(!LOG)return;
+  const ev=Object.assign({t:new Date().toISOString(),s:Math.round((Date.now()-Date.parse(LOG.inicio))/1000),tipo,tela:S.route.name,perfil:S.viewer},info||{});
+  LOG.eventos.push(ev);if(LOG.eventos.length>5000)LOG.eventos.splice(0,LOG.eventos.length-5000);
+  clearTimeout(reg.h);reg.h=setTimeout(gravaLog,400);
+}
+function gravaLog(){if(LOG&&!reiniciar.on)try{localStorage.setItem(LOGKEY,JSON.stringify(LOG))}catch(e){}}
+const rotulo=el=>(el.getAttribute('aria-label')||el.textContent||el.value||'').trim().replace(/\s+/g,' ').slice(0,80);
+function resumoTeste(){
+  const ev=LOG.eventos,n=t=>ev.filter(e=>e.tipo===t).length;
+  return {duracao_min:Math.round((Date.now()-Date.parse(LOG.inicio))/6000)/10,cliques:n('clique'),telas:n('tela'),trocas_de_perfil:n('perfil'),erros_de_validacao:n('erro_validacao'),erros_tecnicos:n('erro_js'),
+    demandas_criadas:S.cases.filter(c=>c.n>=9412).length,casos_encerrados_no_teste:S.cases.filter(c=>c.n>=9412&&c.status==='done').length};
+}
+const pacote=()=>Object.assign({},LOG,{fim:new Date().toISOString(),resumo:resumoTeste(),dados:{cases:S.cases,cidadaos:S.cidadaos,cancelados:S.cancelados||[]}});
+function finalizarTeste(){
+  reg('finalizar_aberto');const r=resumoTeste();
+  painel({title:'Finalizar o teste',html:`<p>Obrigado por participar! Para enviar os resultados:</p>
+    <ol style="padding-left:20px;margin:12px 0;color:var(--text-2)"><li>Clique em <b>Baixar arquivo de resultados</b>.</li><li>Envie o arquivo para quem convidou você (e-mail ou WhatsApp).</li></ol>
+    <p class="sm">Participante ${esc(PART)} · ${String(r.duracao_min).replace('.',',')} min · ${r.cliques} cliques · ${r.erros_de_validacao} avisos de preenchimento.</p>
+    <p class="hint">O arquivo traz as telas e os botões usados, com horário, e os dados fictícios criados no protótipo.</p>
+    <div class="actions" style="margin-top:16px;flex-wrap:wrap"><button type="button" class="btn btn-primary" onclick="baixarTeste()">${ic('download')}Baixar arquivo de resultados</button><button type="button" class="btn btn-secondary" onclick="copiarTeste()">Copiar resultados</button></div>`});
+}
+function baixarTeste(){
+  reg('resultados_baixados');gravaLog();
+  const d=new Date(),nome=`seconecta-teste-${PART}-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(pacote(),null,1)],{type:'application/json'}));a.download=nome;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+  toast('Arquivo de resultados baixado.');
+}
+async function copiarTeste(){
+  reg('resultados_copiados');gravaLog();
+  try{await navigator.clipboard.writeText(JSON.stringify(pacote()));toast('Resultados copiados. Cole no e-mail ou no WhatsApp.')}
+  catch(e){toast('Não foi possível copiar. Use "Baixar arquivo de resultados".')}
+}
+function boasVindas(){
+  painel({title:'Teste de usabilidade do SeConecta',ok:'Começar',html:`<p>Obrigado por participar. Este é um protótipo de estudo: <b>todos os dados são fictícios</b> e ficam só neste navegador. Por favor, não digite dados de pessoas reais.</p>
+    <p style="margin-top:12px">O protótipo registra as telas e os botões que você usa, para entendermos onde a interface ajuda ou atrapalha. Não existe resposta certa: estamos testando o sistema, não você.</p>
+    <p style="margin-top:12px">Quando terminar, clique em <b>Finalizar teste e enviar resultados</b>, no menu lateral (no celular, no topo da página).</p>`,
+    init(){$('#dlgc').hidden=true},run(){reg('inicio_confirmado')}});
+}
+document.addEventListener('click',e=>{
+  if(!LOG)return;const el=e.target.closest('button,a,summary');if(!el)return;
+  reg('clique',{alvo:rotulo(el)});
+},true);
+document.addEventListener('pointerdown',e=>{
+  if(!LOG)return;const el=e.target.closest&&e.target.closest('button:disabled');
+  if(el)reg('clique_desabilitado',{alvo:rotulo(el)});
+},true);
+document.addEventListener('change',e=>{
+  if(!LOG)return;const el=e.target;if(!el.matches('input,select,textarea'))return;
+  const campo=el.id||el.name||'';
+  if(el.type==='radio'||el.tagName==='SELECT')reg('campo',{campo,valor:el.tagName==='SELECT'?(el.selectedOptions[0]||{}).text:el.value});
+  else if(el.type==='checkbox')reg('campo',{campo,marcado:el.checked});
+  else if(el.type==='file')reg('campo',{campo:'anexo',arquivos:el.files.length});
+  else reg('campo',{campo,preenchido:!!el.value.trim()});
+},true);
+addEventListener('error',e=>reg('erro_js',{msg:String(e.message).slice(0,200)}));
+
+regIni();
 if(!carregar())seed();
+if(TESTE){$('#sfnote').textContent=`Teste de usabilidade · participante ${PART} · dados fictícios`;$('#btnreset').hidden=true;$('#btnfim').hidden=false}
 render();
-addEventListener('pagehide',salvar);
+if(LOG&&LOG.novo){delete LOG.novo;reg('inicio');boasVindas()}
+addEventListener('pagehide',()=>{salvar();gravaLog()});
 /* Outra aba do mesmo navegador salvou: recarrega os dados, mantendo o perfil e a tela desta aba */
 addEventListener('storage',e=>{
   if(e.key!==KEY)return;

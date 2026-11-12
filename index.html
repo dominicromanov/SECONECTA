@@ -823,7 +823,7 @@ function criarDemanda(){
     log:[{t:h,txt:`Demanda aberta pela ${SECS[v].nome}`},{t:h,txt:notifTxt({solicitante:v})}]};
   if(!z.consent)c.log.push({t:h,txt:`Encaminhamento por exceção, sem consentimento: ${z.excecao}`});
   S.cases.push(c);S.draft=null;S.files=[];apagaRasc('demanda');
-  if(SIM&&v==='as')agendaSim(c,[[12,'apta','sau'],[28,'pergunta','hab']]);
+  if(SIM&&v==='as')agendaSim(c,planoAbertura(c));
   toast(`Demanda #${prot(c)} criada. Notificação entregue.`);
   go('chat',c.id);
 }
@@ -866,7 +866,7 @@ function vChat(c){
   const msgs=c.msgs.map(m=>m.evt?`<div class="evt">${esc(m.txt)} · ${hora(m.hora)}</div>`
     :`<div class="msg ${m.de===v?'me':''}">${av(m.de)}<div><div class="msg-h"><b>${SECS[m.de].resp}</b><span>${SECS[m.de].nome}${m.de===sol?' (solicitante)':''}</span><time>${esc(m.hora)}</time></div><div class="bubble">${esc(m.txt)}</div>${(m.anexos||[]).map(a=>`<span class="att">${ic('clip',16)}${esc(a.n)} <small>${kb(a.s)}</small></span>`).join('')}</div></div>`).join('');
   const row=(s,extra)=>`<li>${av(s)}<div class="who2"><b>${SECS[s].nome}</b><span>${SECS[s].resp}</span></div>${extra||''}</li>`;
-  const chipAt=s=>c.aptas.includes(s)?'<span class="chip c-ok">Apta</span>':(aberto?'<span class="chip c-att">Sem resposta</span>':'');
+  const chipAt=s=>c.aptas.includes(s)?'<span class="chip c-ok">Apta</span>':(c.recusou||[]).includes(s)?'<span class="chip c-err">Não pode ajudar</span>':(aberto?'<span class="chip c-att">Sem resposta</span>':'');
   return `${caseHead(c,'chat')}
   <div class="stamp" role="status">${ic('check',24)}<span><b>Notificação entregue às demais secretarias em ${esc(c.entregueEm)}</b> (${lista(parcs(c).map(k=>SECS[k].nome))} · comprovante automático)</span></div>
   <div class="conv">
@@ -895,7 +895,8 @@ function vChat(c){
 }
 function enviar(id){
   const c=C(id),t=$('#mtxt').value.trim();if(!t&&!S.cfiles.length){$('#mtxt').focus();return}
-  c.msgs.push({de:S.viewer,txt:t||'Arquivo anexado.',hora:fmt(),anexos:[...S.cfiles]});S.cfiles=[];reg('mensagem_enviada',{caso:id});render();
+  c.msgs.push({de:S.viewer,txt:t||'Arquivo anexado.',hora:fmt(),anexos:[...S.cfiles]});S.cfiles=[];reg('mensagem_enviada',{caso:id});
+  if(SIM&&c.status==='wait'&&S.viewer===c.solicitante&&(c.simAguarda||[]).length)c.simAguarda.forEach(k=>agendaSim(c,[[10,'aceita',k]]));render();
   const m=$('#mtxt');if(m)m.focus();
 }
 function teclaMsg(e,id){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();enviar(id)}}
@@ -927,7 +928,7 @@ function aceitar(id){
   ask({title:'Confirmar aceite e iniciar processo?',ok:'Confirmar aceite',html:`<p>${lista(c.aptas.map(s=>SECS[s].nome))} ${c.aptas.length>1?'passam':'passa'} a responder pelas entregas. O status muda para "Em processo" e o acompanhamento segue na linha do tempo. O chat continua aberto para consultas até o encerramento do caso.</p>${fora.length?`<p style="margin-top:12px">${lista(fora.map(s=>SECS[s].nome))} não se declarou apta e fica fora das entregas.</p>`:''}`},()=>{
     c.status='proc';c.etapa=3;c.aceiteEm=fmt();logPush(c,`Aceite de cooperação confirmado pela ${SECS[c.solicitante].nome}; processo iniciado`);
     c.msgs.push({evt:true,txt:'Aceite confirmado: processo iniciado',hora:c.aceiteEm});
-    if(SIM)c.aptas.filter(k=>k!==c.solicitante).forEach(k=>agendaSim(c,[[15,'exec',k],[50,'ok',k]]));
+    if(SIM)c.aptas.filter(k=>k!==c.solicitante).forEach(k=>agendaSim(c,planoEntrega(c,k)));
     toast('Processo iniciado.');go('timeline',id);
   });
 }
@@ -1244,24 +1245,48 @@ addEventListener('error',e=>reg('erro_js',{msg:String(e.message).slice(0,200)}))
    Com um único participante (assistente social), Saúde, Habitação e Educação respondem sozinhas, com atraso.
    A fila fica no próprio caso (c.simFila), então sobrevive ao F5. Desligar: &sim=0 */
 const SIMTXT={
-  sau:{apta:'Podemos ajudar. A UBS faz o primeiro atendimento esta semana, e eu registro aqui a nossa entrega.',ok:'Atendimento realizado. O relatório da UBS está com a equipe e sai até amanhã.'},
-  hab:{pergunta:'Para avaliar acolhimento ou aluguel social, precisamos saber se a pessoa tem CadÚnico e algum comprovante de residência anterior. Podem informar?'},
-  edu:{apta:'Podemos apoiar. Vou verificar vaga e matrícula e retorno por aqui.',ok:'Matrícula/vaga confirmada e registrada.'}
+  sau:{apta:'Podemos ajudar. A UBS faz o primeiro atendimento esta semana, e eu registro aqui a nossa entrega.',
+       recusa:'Esta demanda não é de competência da Saúde neste momento, então não conseguimos assumir uma entrega. Se surgir necessidade clínica, avisem que reavaliamos.',
+       ok:'Atendimento realizado. O relatório da UBS está com a equipe e sai até amanhã.'},
+  hab:{pergunta:'Para avaliar acolhimento ou aluguel social, precisamos saber se a pessoa tem CadÚnico e algum comprovante de residência anterior. Podem informar?',
+       aceita:'Obrigado pelo retorno. Com essas informações conseguimos incluir o caso na triagem. Registro aqui a nossa entrega.',
+       lembrete:'Ainda aguardamos o retorno sobre CadÚnico e comprovante de residência para seguir com a triagem.',
+       ok:'Triagem concluída e cadastro encaminhado.',
+       inviab:'Não há vaga disponível no acolhimento nesta semana, então não conseguimos cumprir a entrega. Sugerimos buscar outra alternativa.'},
+  edu:{apta:'Podemos apoiar. Vou verificar vaga e matrícula e retorno por aqui.',ok:'Vaga e matrícula confirmadas e registradas.'}
 };
+/* Roteiro das respostas, por tópico (0 subsistência, 1 violência, 2 rua, 3 capacitação, 4 documentação) e urgência.
+   Misturamos aceite, pergunta, recusa e silêncio, para o teste mostrar como o sistema se comporta de verdade. */
+function planoAbertura(c){
+  const t=c.topico,u3=c.urg===3,f=[];
+  f.push([12,(t===1||t===2||u3)?'apta':'recusa','sau']);                       /* Saúde: aceita nos casos de saúde/risco; recusa nos demais */
+  if(t<=2){f.push([28,'pergunta','hab']);f.push([100,'lembrete','hab'])}      /* Habitação: pergunta e espera retorno */
+  if(t>=3)f.push([20,'apta','edu']);                                          /* Educação: só nos casos dela; nos outros, silêncio */
+  return f;
+}
+function planoEntrega(c,k){
+  if(k==='hab')return [[20,'exec','hab'],[55,c.topico===2?'inviab':'ok','hab']];   /* Habitação: sem vaga em casos de rua */
+  return [[15,'exec',k],[50,'ok',k]];
+}
 function agendaSim(c,fila){c.simFila=(c.simFila||[]).concat(fila.map(([seg,tipo,sec])=>({at:Date.now()+seg*1000,tipo,sec})))}
 function rodaSim(c,x){
   if(c.status==='done')return null;
   const s=x.sec,h=fmt(),n=SECS[s].nome,txt=(SIMTXT[s]||{})[x.tipo]||'Ok, estamos acompanhando.';
-  if(x.tipo==='apta'||x.tipo==='pergunta'){
+  const entra=()=>{if(c.env[s]!=='ativo'){c.env[s]='ativo';c.msgs.push({evt:true,txt:`${n} passou a participar ativamente`,hora:h});c.log.push({t:h,txt:`${n} passou a participar ativamente`})}};
+  if(['apta','pergunta','recusa','aceita','lembrete'].includes(x.tipo)){
     if(c.status!=='wait')return null;
-    if(c.env[s]!=='ativo'){c.env[s]='ativo';c.msgs.push({evt:true,txt:`${n} passou a participar ativamente`,hora:h});c.log.push({t:h,txt:`${n} passou a participar ativamente`})}
-    c.msgs.push({de:s,txt,hora:h,anexos:[]});
+    if(x.tipo==='aceita'||x.tipo==='lembrete'){if(!(c.simAguarda||[]).includes(s))return null}
+    entra();c.msgs.push({de:s,txt,hora:h,anexos:[]});
+    if(x.tipo==='pergunta')c.simAguarda=(c.simAguarda||[]).concat(s);
+    if(x.tipo==='aceita'){c.simAguarda=c.simAguarda.filter(k=>k!==s);apta(c.id,s)}
     if(x.tipo==='apta')apta(c.id,s);
-    return `${n} respondeu no chat`;
+    if(x.tipo==='recusa'){c.recusou=(c.recusou||[]).concat(s);c.log.push({t:h,txt:`${n} informou que não pode assumir a entrega`})}
+    return x.tipo==='recusa'?`${n} não pode ajudar`:`${n} respondeu no chat`;
   }
   const e=c.compromissos.find(k=>k.sec===s&&!RESOLV.includes(k.status));
   if(c.status!=='proc'||!e)return null;
   if(x.tipo==='exec'){if(e.status==='Aguardando'){e.status='Em execução';logPush(c,`${n}: entrega em execução`)}return `${n} iniciou a entrega`}
+  if(x.tipo==='inviab'){e.status='Inviabilizada';e.just=txt;logPush(c,`${n}: entrega inviabilizada. Motivo: ${txt}`);c.msgs.push({de:s,txt,hora:h,anexos:[]});return `${n} não conseguiu cumprir a entrega`}
   e.status='Concluída';logPush(c,`${n}: entrega concluída (${e.titulo})`);c.msgs.push({de:s,txt,hora:h,anexos:[]});
   return `${n} concluiu a entrega`;
 }

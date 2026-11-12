@@ -431,6 +431,8 @@ const idade=iso=>{const b=new Date(iso+'T12:00'),n=new Date();let a=n.getFullYea
 /* Modo de teste de usabilidade: ?teste=1&p=P01 */
 const QS=new URLSearchParams(location.search);
 const TESTE=QS.get('teste')==='1';
+const MOD=QS.get('mod')==='1';          /* moderador: libera troca de perfil */
+const SIM=TESTE&&QS.get('sim')!=='0';  /* respostas automáticas das outras secretarias */
 const PART=(QS.get('p')||'').replace(/[^\w-]/g,'').slice(0,20)||'sem-codigo';
 
 const P={
@@ -582,13 +584,20 @@ function go(name,id){
   if(name==='caso'){const c=C(id);name=c.status==='wait'?'chat':'timeline'}
   S.route={name,id};render();window.scrollTo(0,0);$('#main').focus({preventScroll:true});
 }
-function setViewer(v){reg('perfil',{de:S.viewer,para:v});S.viewer=v;render()}
+function setViewer(v){
+  if(TESTE&&!MOD)v='as';
+  const r=S.route.name;
+  if(v!==S.viewer&&(r==='cadastro'||r==='demanda')&&temConteudo(campos())){
+    return ask({title:'Trocar de secretaria?',ok:'Trocar mesmo assim',html:'<p>Você tem um formulário em andamento. O rascunho fica salvo nesta secretaria e volta quando você retornar a ela.</p>'},()=>{reg('perfil',{de:S.viewer,para:v});S.viewer=v;render()});
+  }
+  reg('perfil',{de:S.viewer,para:v});S.viewer=v;render();
+}
 function shell(){
   const v=S.viewer,r=S.route.name,cur=['chat','timeline','comprovante'].includes(r)?'painel':r;
   const items=[['painel','Painel geral','grid']].concat([['demanda','Nova demanda','filePlus'],['cadastro','Novo cadastro','userPlus']]);
   $('#nav').innerHTML=items.map(([k,t,i])=>`<button class="navi" ${cur===k?'aria-current="page"':''} onclick="${k==='demanda'?'S.draft=null;':''}go('${k}')">${ic(i,22)}<span>${t}</span></button>`).join('');
   $('#user').innerHTML=`${av(v)}<div><b>Olá, ${SECS[v].resp.split(' ')[0]}</b><span>${SECS[v].cargo}</span></div>`;
-  $('#viewer').value=v;
+  $('#viewer').value=v;$('#viewer').closest('div').hidden=TESTE&&!MOD;
   const c=S.route.id&&C(S.route.id);
   const home=`<span>Acesso</span><i>›</i><button onclick="go('painel')">Painel geral</button><i>›</i>`;
   const map={painel:'<span>Acesso</span><i>›</i><strong>Painel geral</strong>',cadastro:`${home}<strong>Novo cadastro</strong>`,demanda:`${home}<strong>Abertura de demanda</strong>`};
@@ -814,6 +823,7 @@ function criarDemanda(){
     log:[{t:h,txt:`Demanda aberta pela ${SECS[v].nome}`},{t:h,txt:notifTxt({solicitante:v})}]};
   if(!z.consent)c.log.push({t:h,txt:`Encaminhamento por exceção, sem consentimento: ${z.excecao}`});
   S.cases.push(c);S.draft=null;S.files=[];apagaRasc('demanda');
+  if(SIM&&v==='as')agendaSim(c,[[12,'apta','sau'],[28,'pergunta','hab']]);
   toast(`Demanda #${prot(c)} criada. Notificação entregue.`);
   go('chat',c.id);
 }
@@ -917,6 +927,7 @@ function aceitar(id){
   ask({title:'Confirmar aceite e iniciar processo?',ok:'Confirmar aceite',html:`<p>${lista(c.aptas.map(s=>SECS[s].nome))} ${c.aptas.length>1?'passam':'passa'} a responder pelas entregas. O status muda para "Em processo" e o acompanhamento segue na linha do tempo. O chat continua aberto para consultas até o encerramento do caso.</p>${fora.length?`<p style="margin-top:12px">${lista(fora.map(s=>SECS[s].nome))} não se declarou apta e fica fora das entregas.</p>`:''}`},()=>{
     c.status='proc';c.etapa=3;c.aceiteEm=fmt();logPush(c,`Aceite de cooperação confirmado pela ${SECS[c.solicitante].nome}; processo iniciado`);
     c.msgs.push({evt:true,txt:'Aceite confirmado: processo iniciado',hora:c.aceiteEm});
+    if(SIM)c.aptas.filter(k=>k!==c.solicitante).forEach(k=>agendaSim(c,[[15,'exec',k],[50,'ok',k]]));
     toast('Processo iniciado.');go('timeline',id);
   });
 }
@@ -1126,15 +1137,16 @@ const temConteudo=v=>Object.entries(v||{}).some(([k,x])=>k!=='@sig'&&x);
 function guardaRasc(){
   const r=S.route.name;if((r!=='cadastro'&&r!=='demanda')||reiniciar.on||restauraRasc.on||!$('#main form'))return;
   const d=lerRasc(),v=campos();
-  if(temConteudo(v)||(r==='demanda'&&S.files.length))d[r]={v,files:r==='demanda'?S.files:[]};else delete d[r];
+  const k=kr(r);if(temConteudo(v)||(r==='demanda'&&S.files.length))d[k]={v,files:r==='demanda'?S.files:[]};else delete d[k];
   gravarRasc(d);
 }
-function apagaRasc(r){const d=lerRasc();delete d[r];gravarRasc(d)}
+const kr=r=>S.viewer+'|'+r;   /* rascunho separado por secretaria */
+function apagaRasc(r){const d=lerRasc();delete d[kr(r)];gravarRasc(d)}
 function restauraRasc(r){
   restauraRasc.on=true;try{return aplicaRasc(r)}finally{restauraRasc.on=false}
 }
 function aplicaRasc(r){
-  const d=lerRasc()[r];if(!d||!d.v)return false;const v=d.v;
+  const d=lerRasc()[kr(r)];if(!d||!d.v)return false;const v=d.v;
   if(r==='demanda'){
     if(v.dtop!==undefined&&v.dtop!==''){$('#dtop').value=v.dtop;subOpts();$('#dsub').value=v.dsub||''}
     if(v.dcid&&CID(v.dcid))pickCid(v.dcid);else if(v.dbusca)$('#dbusca').value=v.dbusca;
@@ -1228,8 +1240,51 @@ document.addEventListener('change',e=>{
 },true);
 addEventListener('error',e=>reg('erro_js',{msg:String(e.message).slice(0,200)}));
 
+/* ===== Respostas automáticas das outras secretarias (só no modo de teste) =====
+   Com um único participante (assistente social), Saúde, Habitação e Educação respondem sozinhas, com atraso.
+   A fila fica no próprio caso (c.simFila), então sobrevive ao F5. Desligar: &sim=0 */
+const SIMTXT={
+  sau:{apta:'Podemos ajudar. A UBS faz o primeiro atendimento esta semana, e eu registro aqui a nossa entrega.',ok:'Atendimento realizado. O relatório da UBS está com a equipe e sai até amanhã.'},
+  hab:{pergunta:'Para avaliar acolhimento ou aluguel social, precisamos saber se a pessoa tem CadÚnico e algum comprovante de residência anterior. Podem informar?'},
+  edu:{apta:'Podemos apoiar. Vou verificar vaga e matrícula e retorno por aqui.',ok:'Matrícula/vaga confirmada e registrada.'}
+};
+function agendaSim(c,fila){c.simFila=(c.simFila||[]).concat(fila.map(([seg,tipo,sec])=>({at:Date.now()+seg*1000,tipo,sec})))}
+function rodaSim(c,x){
+  if(c.status==='done')return null;
+  const s=x.sec,h=fmt(),n=SECS[s].nome,txt=(SIMTXT[s]||{})[x.tipo]||'Ok, estamos acompanhando.';
+  if(x.tipo==='apta'||x.tipo==='pergunta'){
+    if(c.status!=='wait')return null;
+    if(c.env[s]!=='ativo'){c.env[s]='ativo';c.msgs.push({evt:true,txt:`${n} passou a participar ativamente`,hora:h});c.log.push({t:h,txt:`${n} passou a participar ativamente`})}
+    c.msgs.push({de:s,txt,hora:h,anexos:[]});
+    if(x.tipo==='apta')apta(c.id,s);
+    return `${n} respondeu no chat`;
+  }
+  const e=c.compromissos.find(k=>k.sec===s&&!RESOLV.includes(k.status));
+  if(c.status!=='proc'||!e)return null;
+  if(x.tipo==='exec'){if(e.status==='Aguardando'){e.status='Em execução';logPush(c,`${n}: entrega em execução`)}return `${n} iniciou a entrega`}
+  e.status='Concluída';logPush(c,`${n}: entrega concluída (${e.titulo})`);c.msgs.push({de:s,txt,hora:h,anexos:[]});
+  return `${n} concluiu a entrega`;
+}
+function tickSim(){
+  if(!SIM||reiniciar.on)return;
+  const now=Date.now(),avisos=[];
+  for(const c of S.cases){
+    if(!c.simFila||!c.simFila.length)continue;
+    const due=c.simFila.filter(x=>x.at<=now);if(!due.length)continue;
+    c.simFila=c.simFila.filter(x=>x.at>now);
+    for(const x of due){const m=rodaSim(c,x);if(m){reg('sim',{tipo:x.tipo,sec:x.sec,caso:c.id});avisos.push(`${m} (${nomeCid(c)})`)}}
+  }
+  if(!avisos.length)return;
+  salvar();
+  const r=S.route.name,digitando=['cadastro','demanda'].includes(r)||$('#dlg').open;
+  if(!digitando){const m=$('#mtxt'),txt=m?m.value:null,y=scrollY;render();scrollTo(0,y);if(txt&&$('#mtxt'))$('#mtxt').value=txt}
+  toast(avisos[0]);
+}
+if(SIM)setInterval(tickSim,2000);
+
 regIni();
 if(!carregar())seed();
+if(TESTE&&!MOD)S.viewer='as';
 if(TESTE){$('#sfnote').textContent=`Teste de usabilidade · participante ${PART} · dados fictícios`;$('#btnreset').hidden=true;$('#btnfim').hidden=false}
 render();
 if(LOG&&LOG.novo){delete LOG.novo;reg('inicio');boasVindas()}

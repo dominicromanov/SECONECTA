@@ -30,6 +30,14 @@ h2{font-size:24px;line-height:1.3;font-weight:600}
 h3{font-size:20px;line-height:1.35;font-weight:600}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.nbadge{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:#FDE68A;color:#1F2937;font-size:13px;font-weight:700}
+.notif{border-left:4px solid var(--blue)}
+.notif ul{list-style:none;margin:8px 0 0;padding:0}
+.notif li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--soft)}
+.notif .nt{flex:1;min-width:0;font-size:15px;overflow-wrap:anywhere}
+.notif .nt small{display:block;color:var(--text-2);font-size:13px}
+.notif .btn{min-height:48px;padding:0 16px;font-size:15px}
+@media (max-width:600px){.notif li{flex-wrap:wrap}.notif li .btn{width:100%}}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .lab{font-size:14px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);display:flex;align-items:center;gap:8px}
 .t2{color:var(--text-2)}.sm{font-size:14px}
@@ -545,6 +553,14 @@ const ub=u=>`<span class="ub ub${u}">${urgLabel(u)}</span>`;
 const stChip=s=>`<span class="chip ${STATUS[s][1]}">${STATUS[s][0]}</span>`;
 const av=s=>`<span class="av av-${s}" aria-hidden="true">${SECS[s].sig}</span>`;
 const logPush=(c,txt)=>c.log.push({t:fmt(),txt});
+/* Novidades: cada secretaria guarda até onde leu do chat de cada caso (c.lido[secretaria] = nº de mensagens vistas) */
+function inicLido(){for(const c of S.cases){c.lido=c.lido||{};for(const k of Object.keys(SECS))if(c.lido[k]===undefined)c.lido[k]=c.msgs.length}}
+function marcaLido(c){if(!c)return;c.lido=c.lido||{};c.lido[S.viewer]=c.msgs.length}
+const lidoIdx=(c,v)=>(c.lido&&c.lido[v]!==undefined)?c.lido[v]:c.msgs.length;
+const novas=(c,v)=>c.msgs.slice(lidoIdx(c,v)).filter(m=>m.de?m.de!==v:/apta|entrega/.test(m.txt||''));
+const tms=h=>{const m=/(\d+)\/(\d+)\/(\d+) às (\d+):(\d+)/.exec(h||'');return m?new Date(+m[3],m[2]-1,+m[1],+m[4],+m[5]).getTime():0};
+const todasNovas=()=>visiveis().flatMap(c=>novas(c,S.viewer).map(m=>({c,m}))).sort((a,b)=>tms(b.m.hora)-tms(a.m.hora));
+function marcaTodas(){reg('novidades_lidas');S.cases.forEach(marcaLido);render()}
 /* Nome do cidadão: completo para a solicitante, ou com sigilo geral e consentimento; senão, só iniciais */
 function nomeCid(c){const z=CID(c.cid);return (S.viewer===c.solicitante||(z.consent&&c.sigilo==='geral'))?z.nome:z.ini}
 
@@ -594,8 +610,9 @@ function setViewer(v){
 }
 function shell(){
   const v=S.viewer,r=S.route.name,cur=['chat','timeline','comprovante'].includes(r)?'painel':r;
+  const nT=todasNovas().length;
   const items=[['painel','Painel geral','grid']].concat([['demanda','Nova demanda','filePlus'],['cadastro','Novo cadastro','userPlus']]);
-  $('#nav').innerHTML=items.map(([k,t,i])=>`<button class="navi" ${cur===k?'aria-current="page"':''} onclick="${k==='demanda'?'S.draft=null;':''}go('${k}')">${ic(i,22)}<span>${t}</span></button>`).join('');
+  $('#nav').innerHTML=items.map(([k,t,i])=>`<button class="navi" ${cur===k?'aria-current="page"':''} onclick="${k==='demanda'?'S.draft=null;':''}go('${k}')">${ic(i,22)}<span>${t}</span>${k==='painel'&&nT?`<span class="nbadge"><span class="sr">${nT} novidades</span><span aria-hidden="true">${nT}</span></span>`:''}</button>`).join('');
   $('#user').innerHTML=`${av(v)}<div><b>Olá, ${SECS[v].resp.split(' ')[0]}</b><span>${SECS[v].cargo}</span></div>`;
   $('#viewer').value=v;$('#viewer').closest('div').hidden=TESTE&&!MOD;
   const c=S.route.id&&C(S.route.id);
@@ -603,19 +620,24 @@ function shell(){
   const map={painel:'<span>Acesso</span><i>›</i><strong>Painel geral</strong>',cadastro:`${home}<strong>Novo cadastro</strong>`,demanda:`${home}<strong>Abertura de demanda</strong>`};
   if(c){const t={chat:`Chat ${esc(nomeCid(c))}`,timeline:'Timeline',comprovante:'Comprovante'}[r];map[r]=`${home}<strong>${t}</strong>`}
   $('#crumbs').innerHTML=map[r]||'';
-  document.title=`${({painel:'Painel geral',cadastro:'Novo cadastro',demanda:'Abertura de demanda',chat:'Chat da instância',timeline:'Linha do tempo',comprovante:'Comprovante'})[r]} · SeConecta`;
+  document.title=`${nT?`(${nT}) `:''}${({painel:'Painel geral',cadastro:'Novo cadastro',demanda:'Abertura de demanda',chat:'Chat da instância',timeline:'Linha do tempo',comprovante:'Comprovante'})[r]} · SeConecta`;
 }
 function render(){
   const r=S.route;
   if(r.id&&!C(r.id)){S.route={name:'painel'};return render()}
-  if(r.name==='chat')marcaVista(C(r.id));
+  render.entrou=false;
+  if(r.name==='chat'){
+    const c0=C(r.id),entrando=(r.name+r.id+S.viewer)!==render.ult;render.entrou=entrando;
+    if(entrando)S.sep=novas(c0,S.viewer).length?{id:r.id,i:lidoIdx(c0,S.viewer)}:null;
+    marcaVista(c0);marcaLido(c0);
+  }
   shell();
   const tk=r.name+(r.id||'')+S.viewer;if(tk!==render.ult){render.ult=tk;reg('tela',{caso:r.id})}
   const views={painel:vPainel,cadastro:vCadastro,demanda:vDemanda,chat:()=>vChat(C(r.id)),timeline:()=>vTimeline(C(r.id)),comprovante:()=>vComp(C(r.id))};
   $('#main').innerHTML=views[r.name]();
   if(r.name==='demanda')initDemanda();
   if(r.name==='cadastro')avisoRasc('cadastro',restauraRasc('cadastro'));
-  if(r.name==='chat'){const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight}
+  if(r.name==='chat'){const m=$('#msgs'),d=$('#novasep');if(m)m.scrollTop=(d&&render.entrou)?Math.max(0,d.offsetTop-m.offsetTop-24):m.scrollHeight}
   salvar();
 }
 
@@ -636,7 +658,7 @@ function cardHTML(c){
   const at=ativos(c),fechado=c.status==='done';
   const flag=c.status!=='wait'?'':c.aptas.length?`<span style="color:var(--ok);font-weight:600">${c.aptas.length} ${c.aptas.length>1?'secretarias aptas':'secretaria apta'}</span>`:'<span style="color:var(--att);font-weight:600">Nenhuma secretaria ofereceu ajuda ainda</span>';
   return `<article class="card u${c.urg}">
-    <div class="card-top"><h3>${esc(nomeCid(c))}</h3><span class="chips">${ub(c.urg)}${stChip(c.status)}</span></div>
+    <div class="card-top"><h3>${esc(nomeCid(c))}</h3><span class="chips">${(n=>n?`<span class="chip c-info">${n} ${n>1?'novas':'nova'}</span>`:'')(novas(c,S.viewer).length)}${ub(c.urg)}${stChip(c.status)}</span></div>
     <p class="ln"><b>${esc(c.sub)}</b></p>
     <p class="ln">${SECS[c.solicitante].nome} → ${at.length?at.map(s=>SECS[s].nome).join(', '):'ninguém participando'}</p>
     <p class="ln">${esc(dia(c.criado))} · <span class="mono">#${prot(c)}</span>${flag?'<br>'+flag:''}</p>
@@ -652,12 +674,18 @@ function limpar(){S.f={q:'',st:null,urg:0,topic:null,sub:null};render()}
 function feedHead(n){return `<span class="sm t2" id="fcount">${n} ${n===1?'demanda':'demandas'} · maior urgência primeiro</span>`}
 function updFeed(){const {list}=filtrados();$('#feed').innerHTML=list.length?list.map(cardHTML).join(''):emptyHTML();$('#fcount').outerHTML=feedHead(list.length)}
 const emptyHTML=()=>`<div class="empty"><p><b>Nenhuma demanda com esses filtros.</b></p><button class="lnk" onclick="limpar()">Limpar filtros</button></div>`;
+function quadroNovas(){
+  const l=todasNovas();if(!l.length)return '';
+  const itens=l.slice(0,5).map(({c,m})=>`<li>${m.de?av(m.de):ic('info',28)}<div class="nt"><b>${m.de?SECS[m.de].nome:esc(m.txt)}</b>${m.de?` respondeu em <b>${esc(nomeCid(c))}</b>`:` · <b>${esc(nomeCid(c))}</b>`}${m.de?`<small>“${esc(m.txt.length>140?m.txt.slice(0,140)+'…':m.txt)}” · ${esc(hora(m.hora))}</small>`:`<small>${esc(hora(m.hora))}</small>`}</div><button class="btn btn-secondary" onclick="go('chat','${c.id}')">Abrir chat</button></li>`).join('');
+  return `<section class="box notif" aria-label="Novidades para você"><div class="box-h"><p class="lab">Novidades para você · ${l.length}</p><button class="lnk" onclick="marcaTodas()">Marcar tudo como lido</button></div><ul>${itens}</ul>${l.length>5?`<p class="hint">e mais ${l.length-5}. Abra os chats com o selo "nova" na lista abaixo.</p>`:''}</section>`;
+}
 function vPainel(){
   const v=S.viewer,f=S.f,{base,g,list}=filtrados();
   const cnt=i=>base.filter(c=>c.topico===i).length,cntS=s=>base.filter(c=>c.sub===s).length;
   const aberto=matchMedia('(min-width:1051px)').matches||f.topic!==null;
   return `<div class="page-h"><div><p class="lab">Secretaria de ${SECS[v].nome}</p><h1>Painel geral de demandas</h1><p class="t2">Olá, ${SECS[v].resp.split(' ')[0]}. ${g.abertos.length} ${g.abertos.length===1?'chat aberto':'chats abertos'} e ${g.proc.length} em processo.</p></div>
     <div class="actions"><button class="btn btn-secondary" onclick="go('cadastro')">${ic('userPlus')}Novo cadastro</button><button class="btn btn-primary" onclick="S.draft=null;go('demanda')">${ic('plus')}Nova demanda</button></div></div>
+  ${quadroNovas()}
   <section class="kpis" aria-label="Filtros de status">${KPI.map(([k,t,i,col])=>`<button class="kpi" style="--bar:${col}" aria-pressed="${f.st===k}" onclick="setSt('${k}')"><span style="color:${col}">${ic(i,32)}</span><b>${t}</b><small>${f.st===k?'Filtro ativo · clique para remover':'Clique para filtrar'}</small><span class="num">${g[k].length}</span></button>`).join('')}</section>
   <div class="filters">
     <div class="search">${ic('search')}<label class="sr" for="q">Buscar</label><input class="inp" id="q" type="search" value="${esc(f.q)}" placeholder="Buscar por palavra-chave ou protocolo…" oninput="S.f.q=this.value;updFeed()"></div>
@@ -822,6 +850,7 @@ function criarDemanda(){
     msgs:[{de:v,txt:res,hora:h,anexos:[...S.files]}],
     log:[{t:h,txt:`Demanda aberta pela ${SECS[v].nome}`},{t:h,txt:notifTxt({solicitante:v})}]};
   if(!z.consent)c.log.push({t:h,txt:`Encaminhamento por exceção, sem consentimento: ${z.excecao}`});
+  c.lido={};Object.keys(SECS).forEach(k=>c.lido[k]=(k===v?1:0));
   S.cases.push(c);S.draft=null;S.files=[];apagaRasc('demanda');
   if(SIM&&v==='as')c.simIniciado=true;agendaSim(c,planoAbertura(c));
   toast(`Demanda #${prot(c)} criada. Notificação entregue.`);
@@ -863,8 +892,9 @@ function participar(id){
 function vChat(c){
   const v=S.viewer,isSol=v===c.solicitante,papel=isSol?'sol':stEnv(c,v),aberto=c.status==='wait',fechado=c.status==='done',sol=c.solicitante;
   const escreve=!fechado&&(isSol||papel==='ativo'),at=ativos(c),ps=passivos(c),nv=naoVistas(c);
-  const msgs=c.msgs.map(m=>m.evt?`<div class="evt">${esc(m.txt)} · ${hora(m.hora)}</div>`
-    :`<div class="msg ${m.de===v?'me':''}">${av(m.de)}<div><div class="msg-h"><b>${SECS[m.de].resp}</b><span>${SECS[m.de].nome}${m.de===sol?' (solicitante)':''}</span><time>${esc(m.hora)}</time></div><div class="bubble">${esc(m.txt)}</div>${(m.anexos||[]).map(a=>`<span class="att">${ic('clip',16)}${esc(a.n)} <small>${kb(a.s)}</small></span>`).join('')}</div></div>`).join('');
+  const sepI=(S.sep&&S.sep.id===c.id)?S.sep.i:-1;
+  const msgs=c.msgs.map((m,i)=>(i===sepI?'<div class="evt" id="novasep" style="color:var(--blue);font-weight:600">Novas mensagens</div>':'')+(m.evt?`<div class="evt">${esc(m.txt)} · ${hora(m.hora)}</div>`
+    :`<div class="msg ${m.de===v?'me':''}">${av(m.de)}<div><div class="msg-h"><b>${SECS[m.de].resp}</b><span>${SECS[m.de].nome}${m.de===sol?' (solicitante)':''}</span><time>${esc(m.hora)}</time></div><div class="bubble">${esc(m.txt)}</div>${(m.anexos||[]).map(a=>`<span class="att">${ic('clip',16)}${esc(a.n)} <small>${kb(a.s)}</small></span>`).join('')}</div></div>`)).join('');
   const row=(s,extra)=>`<li>${av(s)}<div class="who2"><b>${SECS[s].nome}</b><span>${SECS[s].resp}</span></div>${extra||''}</li>`;
   const chipAt=s=>c.aptas.includes(s)?'<span class="chip c-ok">Apta</span>':(c.recusou||[]).includes(s)?'<span class="chip c-err">Não pode ajudar</span>':(aberto?'<span class="chip c-att">Sem resposta</span>':'');
   return `${caseHead(c,'chat')}
@@ -1392,7 +1422,7 @@ function rodaSim(c,x){
   }
   const e=c.compromissos.find(k=>k.sec===s&&!RESOLV.includes(k.status));
   if(c.status!=='proc'||!e)return null;
-  if(x.tipo==='exec'){if(e.status==='Aguardando'){e.status='Em execução';logPush(c,`${n}: entrega em execução`)}return `${n} iniciou a entrega`}
+  if(x.tipo==='exec'){if(e.status==='Aguardando'){e.status='Em execução';logPush(c,`${n}: entrega em execução`);c.msgs.push({evt:true,txt:`${n}: entrega em execução`,hora:fmt()})}return `${n} iniciou a entrega`}
   if(x.tipo==='inviab'){e.status='Inviabilizada';e.just=txt;logPush(c,`${n}: entrega inviabilizada. Motivo: ${txt}`);c.msgs.push({de:s,txt,hora:h,anexos:[]});return `${n} não conseguiu cumprir a entrega`}
   e.status='Concluída';logPush(c,`${n}: entrega concluída (${e.titulo})`);c.msgs.push({de:s,txt,hora:h,anexos:[]});
   return `${n} concluiu a entrega`;
@@ -1416,6 +1446,7 @@ if(SIM)setInterval(tickSim,2000);
 
 regIni();
 if(!carregar())seed();
+inicLido();
 if(TESTE&&!MOD)S.viewer='as';
 if(TESTE){$('#sfnote').textContent=`Teste de usabilidade · participante ${PART} · dados fictícios`;$('#btnreset').hidden=true;$('#btnfim').hidden=false}
 render();

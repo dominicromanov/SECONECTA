@@ -1357,6 +1357,9 @@ const RESP={
 /* Texto de cada resposta, de acordo com o relato da demanda (tr) e com a mensagem a que se responde (tc) */
 function textoSim(c,s,tipo,ctx){
   const tr=tagsDe(`${c.resumo||''} ${c.justUrg||''} ${c.sub||''}`),tc=tagsDe(ctx||'');
+  const cf=(cfgSub(c)||{})[s]||{};
+  if(tipo!=='ack'&&typeof cf[tipo]==='string')return cf[tipo];   /* texto específico do subtópico */
+  if(tipo==='lembrete'&&s!=='hab')return 'Ainda aguardamos o seu retorno para seguir com a nossa parte.';
   if(tipo==='ack'){
     if(s==='sau'&&tc.has('crise'))return 'Isso é prioridade máxima. Acionamos agora o CAPS de Araçoiaba para um atendimento ainda hoje. Se houver risco imediato, ligue para o SAMU (192) ou para o CVV (188, 24 horas), e a pessoa não deve ficar sozinha. Avisem aqui a cada novidade.';
     const pre=tc.has('contesta')?'Desculpe a confusão. ':'',R=RESP[s]||{},esp=[];
@@ -1407,18 +1410,81 @@ function respSel(c,t){
   const ult=[...c.msgs].reverse().find(m=>m.de&&m.de!==c.solicitante);
   return (ult&&ult.de)||ja[0]||null;
 }
-/* Roteiro das respostas, por tópico (0 subsistência, 1 violência, 2 rua, 3 capacitação, 4 documentação) e urgência.
-   Misturamos aceite, pergunta, recusa e silêncio, para o teste mostrar como o sistema se comporta de verdade. */
+/* ---- Roteiro de respostas por subtópico ----
+   Para cada tópico (0-4) e subtópico (0-3): o que cada secretaria faz.
+   k = 'apta' (aceita) | 'recusa' | 'pergunta' (pergunta e só aceita depois que a assistente responde) | ausente (silêncio).
+   Textos opcionais: apta, recusa, pergunta, aceita, ok (entrega concluída), inviab (entrega que não se cumpre).
+   O que não estiver escrito aqui usa o texto padrão de textoSim. */
+const SUB=[
+ [ /* 0 Subsistência e benefícios imediatos */
+  {sau:{k:'recusa',recusa:'Benefícios eventuais são da Assistência Social, então não temos entrega nesta demanda. Se precisarem de declaração de óbito ou de nascido vivo para instruir o pedido, avisem aqui que emitimos.'},
+   hab:{k:'pergunta',pergunta:'Para o aluguel social, preciso confirmar: a pessoa tem CadÚnico ativo e algum comprovante de residência anterior? E qual o valor do aluguel que ela paga ou pagava?',aceita:`Obrigado pelo retorno. Podemos incluir o caso na análise do aluguel social, que é decidida na reunião de quinta-feira, às 14h, na ${LOC.hab}. Registro aqui a nossa entrega.`,ok:'Aluguel social aprovado por 3 meses, renovável após reavaliação do CRAS.'}},
+  {sau:{k:'apta',apta:`Podemos ajudar com o acompanhamento nutricional: a nutricionista da ${LOC.ubs} avalia o estado nutricional da família, com prioridade para crianças e gestantes. Registro aqui a nossa entrega.`,ok:'Avaliação nutricional feita, orientações entregues e retorno marcado em 30 dias.'},
+   edu:{k:'apta',apta:`Podemos apoiar: garantimos a alimentação escolar das crianças da família, com refeição reforçada na ${LOC.esc}. Registro aqui a nossa entrega.`,ok:'Alimentação escolar garantida e frequência acompanhada.'}},
+  {sau:{k:'apta',apta:'Podemos ajudar: atualizamos as condicionalidades de saúde do Bolsa Família (vacinação, pré-natal e peso das crianças) e, se for BPC, emitimos o relatório médico para a perícia. Registro aqui a nossa entrega.',ok:'Condicionalidades de saúde atualizadas e relatório médico entregue à Assistência.'},
+   edu:{k:'apta',apta:'Podemos apoiar: emitimos a declaração de frequência escolar exigida nas condicionalidades do Bolsa Família. Registro aqui a nossa entrega.',ok:'Declaração de frequência escolar emitida e enviada.'}},
+  {sau:{k:'recusa',recusa:'Doações de roupas, cobertores e kits de higiene não são da Saúde, e não temos estoque para isso. Se houver necessidade de curativos ou medicação, avisem aqui.'},
+   hab:{k:'apta',apta:`Temos cobertores e colchões no estoque da Defesa Civil, ligado à Habitação. Posso entregar hoje até as 17h na ${LOC.hab}. Registro aqui a nossa entrega.`,ok:'Cobertores e colchões entregues e registrados no estoque.'}}
+ ],
+ [ /* 1 Proteção especial contra violência e violação de direitos */
+  {sau:{k:'apta',apta:`Podemos ajudar. A ${LOC.ubs} faz o acolhimento e a avaliação clínica, com registro das lesões e notificação compulsória, tudo em sigilo, e consigo encaixar na quarta-feira pela manhã. Registro aqui a nossa entrega.`,ok:'Atendimento realizado na UBS Centro. Lesões registradas, notificação feita e relatório sigiloso enviado à Assistência.'},
+   hab:{k:'pergunta',pergunta:'Para avaliar vaga em casa-abrigo ou aluguel social para a vítima, preciso saber: há risco imediato se ela voltar para casa? E ela tem filhos que precisam ir junto?',aceita:'Entendido. Conseguimos incluir a vítima no aluguel social em caráter de urgência e, se houver risco imediato, vaga em casa-abrigo sigilosa, com entrada combinada por telefone e sem divulgar o endereço. Registro aqui a nossa entrega.',ok:'Vaga em casa-abrigo sigilosa confirmada e aluguel social em análise.'}},
+  {sau:{k:'apta',apta:`Podemos ajudar: avaliação clínica da criança na ${LOC.ubs}, com notificação compulsória e comunicação ao Conselho Tutelar, em sigilo. Registro aqui a nossa entrega.`,ok:'Avaliação clínica feita, notificação registrada e Conselho Tutelar comunicado.'},
+   edu:{k:'apta',apta:'Podemos apoiar: a escola da criança faz a escuta protegida, acompanha a frequência e comunica o Conselho Tutelar. Registro aqui a nossa entrega.',ok:'Escuta protegida feita na escola e relatório de frequência enviado ao Conselho Tutelar.'}},
+  {sau:{k:'apta',apta:'Podemos ajudar: visita domiciliar da enfermeira com a agente comunitária e avaliação geriátrica, com atenção a sinais de negligência. Consigo na segunda-feira. Registro aqui a nossa entrega.',ok:'Visita domiciliar feita, avaliação geriátrica registrada e relatório enviado.'},
+   hab:{k:'pergunta',pergunta:'Para avaliar adaptação da casa ou outro acolhimento, preciso saber: a pessoa mora sozinha? A moradia tem risco (escada, umidade, banheiro sem adaptação)?',aceita:'Obrigado pelo retorno. Fazemos a vistoria da moradia na quinta-feira e avaliamos reforma básica ou acolhimento. Registro aqui a nossa entrega.',ok:'Vistoria feita e adaptação básica da moradia encaminhada.'}},
+  {sau:{k:'apta',apta:'Podemos ajudar: avaliação clínica e de saúde ocupacional, com notificação do agravo e acompanhamento. Registro aqui a nossa entrega.',ok:'Avaliação feita, agravo notificado e acompanhamento agendado.'},
+   hab:{k:'pergunta',pergunta:'Se houver resgate, preciso confirmar: a pessoa precisa de acolhimento imediato? Há familiares com ela?',aceita:`Entendido. Reservo acolhimento temporário na ${LOC.casa} por até 7 dias, para a pessoa e um acompanhante. Registro aqui a nossa entrega.`,ok:'Acolhimento temporário garantido por 7 dias.'},
+   edu:{k:'apta',apta:'Podemos apoiar: fazemos a busca ativa escolar, a matrícula e o contraturno para a criança sair do trabalho. Registro aqui a nossa entrega.',ok:'Matrícula e contraturno confirmados.'}}
+ ],
+ [ /* 2 População em situação de rua e desabrigo crítico */
+  {sau:{k:'apta',apta:`Podemos ajudar: a equipe de Saúde da Família faz a avaliação na abordagem, com pressão, glicemia, medicação e vacinação, e leva à ${LOC.ubs} se precisar. Registro aqui a nossa entrega.`},
+   hab:{k:'pergunta'}},
+  {sau:{k:'apta'},
+   hab:{k:'pergunta',inviab:'Não há vaga disponível na Casa de Acolhimento Temporário nesta semana, então não conseguimos cumprir a entrega. Sugerimos buscar outra alternativa.'}},
+  {sau:{k:'apta',apta:`Podemos ajudar com cuidados de higiene e saúde: curativos, tratamento de pele e vacinação, na ${LOC.ubs}. Registro aqui a nossa entrega.`,ok:'Curativos e vacinação feitos na UBS Centro.'},
+   hab:{k:'recusa',recusa:'O banho e a convivência diurna são do Centro POP, da Assistência Social, e a Habitação não tem estrutura de higiene. Se surgir necessidade de moradia ou acolhimento, avisem aqui.'}},
+  {sau:{k:'apta',apta:'Podemos ajudar: montamos um plantão de saúde no abrigo, com triagem, vacinação e medicação de uso contínuo. Registro aqui a nossa entrega.',ok:'Plantão de saúde instalado no abrigo e funcionando.'},
+   hab:{k:'apta',apta:'Podemos ajudar: com a Defesa Civil listamos as famílias, cadastramos o abrigo e providenciamos colchões e cobertores. Registro aqui a nossa entrega.',ok:'Abrigo cadastrado, famílias listadas e colchões entregues.'},
+   edu:{k:'apta',apta:`Podemos ceder a ${LOC.esc} como abrigo temporário, com capacidade para cerca de 80 pessoas, e remanejar as aulas. Registro aqui a nossa entrega.`,ok:'Escola liberada como abrigo e aulas remanejadas.'}}
+ ],
+ [ /* 3 Autonomia, capacitação e inclusão produtiva */
+  {sau:{k:'recusa',recusa:'Cursos de qualificação não são da Saúde, então não temos entrega nesta demanda.'},
+   edu:{k:'apta',apta:'Podemos apoiar: há turma de qualificação abrindo no próximo mês no Centro de Formação de Araçoiaba (Av. do Trabalho, 200), e reservo uma vaga. Registro aqui a nossa entrega.',ok:'Vaga reservada e matrícula no curso confirmada.'}},
+  {sau:{k:'recusa',recusa:'Intermediação de mão de obra não é da Saúde, então não temos entrega nesta demanda.'},
+   edu:{k:'pergunta',pergunta:'Para indicar o melhor curso e a vaga, preciso saber: qual a escolaridade e a experiência profissional da pessoa? Ela já tem currículo?',aceita:'Obrigado pelo retorno. Inscrevo a pessoa no banco de currículos do Centro de Formação e na orientação para cooperativas, com atendimento na terça, às 14h. Registro aqui a nossa entrega.',ok:'Inscrição no banco de currículos feita e orientação para cooperativas realizada.'}},
+  {sau:{k:'recusa',recusa:'Educação financeira e economia solidária não são da Saúde, então não temos entrega nesta demanda.'},
+   edu:{k:'apta',apta:'Podemos apoiar: a oficina de educação financeira e economia solidária acontece aos sábados, às 9h, no Centro de Formação, e reservo uma vaga. Registro aqui a nossa entrega.',ok:'Vaga na oficina reservada e presença confirmada.'}},
+  {sau:{k:'recusa',recusa:'Inclusão digital não é da Saúde, então não temos entrega nesta demanda.'},
+   edu:{k:'apta',apta:`Podemos apoiar: o laboratório de informática da ${LOC.esc} abre turmas às terças e quintas, à noite, e reservo uma vaga. Registro aqui a nossa entrega.`,ok:'Vaga no laboratório de informática confirmada.'}}
+ ],
+ [ /* 4 Cidadania básica, documentação e regularização civil */
+  {sau:{k:'apta',apta:'Podemos ajudar: emitimos cópia da Declaração de Nascido Vivo ou da Declaração de Óbito, que o cartório exige para a 2ª via. Registro aqui a nossa entrega.',ok:'Declaração emitida e enviada à Assistência.'},
+   edu:{k:'apta',apta:'Podemos apoiar: emito a declaração escolar e reservo a vaga da criança até a certidão sair. Registro aqui a nossa entrega.',ok:'Declaração escolar emitida e vaga reservada.'}},
+  {sau:{k:'recusa',recusa:'A emissão de RG, CPF e carteira de trabalho não é da Saúde. Podemos fornecer o Cartão SUS, se ajudar.'},
+   edu:{k:'pergunta',pergunta:'Para emitir uma declaração escolar que ajude no RG, preciso saber: a pessoa é ou foi estudante da rede municipal? Em qual escola e ano?',aceita:'Obrigado. Localizo o histórico e emito a declaração escolar para anexar ao pedido do RG. Registro aqui a nossa entrega.',ok:'Declaração escolar emitida para o pedido de RG.'}},
+  {sau:{k:'apta',apta:'Podemos ajudar: cadastramos no SUS sem documento do país de origem, com Cartão SUS provisório, e atualizamos a vacinação. Registro aqui a nossa entrega.',ok:'Cartão SUS provisório emitido e vacinas atualizadas.'},
+   hab:{k:'pergunta',pergunta:'Para orientar a moradia, preciso saber: a pessoa está em abrigo ou com parentes? Quantas pessoas da família?',aceita:'Obrigado. Incluímos a família na triagem de acolhimento na próxima terça-feira, às 9h, com intérprete se for preciso. Registro aqui a nossa entrega.',ok:'Família incluída na fila de acolhimento e orientada.'},
+   edu:{k:'apta',apta:'Podemos apoiar: matrícula das crianças sem documentos de origem, com declaração da Assistência, e apoio de português para estrangeiros. Registro aqui a nossa entrega.',ok:'Matrícula e apoio de português confirmados.'}},
+  {sau:{k:'recusa',recusa:'A isenção de taxas cartorárias é pedida pela Assistência junto ao cartório e à Defensoria, não é da Saúde.'},
+   hab:{k:'recusa',recusa:'Não temos competência sobre isenção cartorária. Se a certidão servir para comprovar moradia, avisem aqui.'},
+   edu:{k:'pergunta',pergunta:'A certidão é para matricular uma criança? Se for, emito a declaração escolar que ajuda no pedido de isenção.',aceita:'Entendido. Emito a declaração escolar para anexar ao pedido de isenção. Registro aqui a nossa entrega.',ok:'Declaração escolar emitida para o pedido de isenção.'}}
+ ]
+];
+const SUB_PADRAO={sau:{k:'apta'},hab:{k:'pergunta'}};
+const cfgSub=c=>{const j=(TOPICS[c.topico]||{subs:[]}).subs.findIndex(x=>x[0]===c.sub);return (SUB[c.topico]&&SUB[c.topico][j])||SUB_PADRAO};
 function planoAbertura(c){
-  const t=c.topico,u3=c.urg===3,f=[];
-  f.push([12,(t===1||t===2||u3)?'apta':'recusa','sau']);                       /* Saúde: aceita nos casos de saúde/risco; recusa nos demais */
-  if(t<=2){f.push([28,'pergunta','hab']);f.push([100,'lembrete','hab'])}      /* Habitação: pergunta e espera retorno */
-  if(t>=3)f.push([20,'apta','edu']);                                          /* Educação: só nos casos dela; nos outros, silêncio */
+  const cf=cfgSub(c),f=[];
+  for(const [s,seg] of [['sau',12],['edu',20],['hab',28]]){
+    const x=cf[s];if(!x||!x.k)continue;
+    f.push([seg,x.k,s]);
+    if(x.k==='pergunta')f.push([seg+70,'lembrete',s]);
+  }
   return f.filter(([,,sec])=>!c.aptas.includes(sec));   /* quem já está apta no exemplo não repete */
 }
 function planoEntrega(c,k){
-  if(k==='hab')return [[20,'exec','hab'],[55,c.topico===2?'inviab':'ok','hab']];   /* Habitação: sem vaga em casos de rua */
-  return [[15,'exec',k],[50,'ok',k]];
+  const x=cfgSub(c)[k]||{};
+  return x.inviab?[[20,'exec',k],[55,'inviab',k]]:[[k==='hab'?20:15,'exec',k],[k==='hab'?55:50,'ok',k]];
 }
 function agendaSim(c,fila){c.simFila=(c.simFila||[]).concat(fila.map(([seg,tipo,sec,ctx])=>({at:Date.now()+seg*1000,tipo,sec,ctx})))}
 function rodaSim(c,x){

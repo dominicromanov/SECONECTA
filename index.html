@@ -213,17 +213,20 @@ select.inp{appearance:none;padding-right:44px;background:#fff url("data:image/sv
 .tp.sub::before{content:"└";margin-right:6px;color:var(--border)}
 .tp.sub span:first-child{flex:1}
 .tp.sub.on{color:var(--blue)}
-.feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
-.card{display:flex;flex-direction:column;gap:8px;padding:24px;background:var(--surface);border:1px solid #93A3D3;border-radius:var(--r-card);min-width:0}
+.feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{display:flex;flex-direction:column;gap:4px;padding:16px;background:var(--surface);border:1px solid #93A3D3;border-radius:var(--r-card);min-width:0}
 .card.u2{border:2px solid var(--u2)}
 .card.u3{border:2px solid var(--err);background:#FFF7F6;animation:pulse 1.8s ease-in-out infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(180,35,24,.35)}50%{box-shadow:0 0 0 6px rgba(180,35,24,0)}}
 @media (prefers-reduced-motion:reduce){.card.u3{animation:none}}
-.card-top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
-.ln{font-size:15px;color:var(--text-2)}
+.card-top{display:flex;justify-content:space-between;gap:4px 8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:4px}
+.card-top h3{font-size:18px;line-height:1.3;min-width:0;overflow-wrap:anywhere}
+.card-top .chips{display:flex;gap:4px;flex-wrap:wrap}
+.card .chip{min-height:28px;padding:2px 10px;font-size:13px}
+.ln{font-size:14px;line-height:1.4;color:var(--text-2)}
 .ln b{color:var(--text);font-weight:600}
-.card-f{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:8px;border-top:1px solid var(--soft)}
-.card-f .acts{display:flex;gap:24px}
+.card-f{display:flex;justify-content:flex-end;align-items:center;gap:4px 8px;flex-wrap:wrap;margin-top:auto;padding-top:4px;border-top:1px solid var(--soft)}
+.card-f .acts{display:flex;gap:16px}
 .empty{grid-column:1/-1;padding:48px 24px;text-align:center;background:var(--surface);border:1px dashed var(--border);border-radius:var(--r-card);color:var(--text-2)}
 
 /* ===== Caso ===== */
@@ -540,6 +543,8 @@ const ub=u=>`<span class="ub ub${u}">${urgLabel(u)}</span>`;
 const stChip=s=>`<span class="chip ${STATUS[s][1]}">${STATUS[s][0]}</span>`;
 const av=s=>`<span class="av av-${s}" aria-hidden="true">${SECS[s].sig}</span>`;
 const logPush=(c,txt)=>c.log.push({t:fmt(),txt});
+/* Nome do cidadão: completo para a solicitante, ou com sigilo geral e consentimento; senão, só iniciais */
+function nomeCid(c){const z=CID(c.cid);return (S.viewer===c.solicitante||(z.consent&&c.sigilo==='geral'))?z.nome:z.ini}
 
 async function sha(s){
   try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -587,7 +592,7 @@ function shell(){
   const c=S.route.id&&C(S.route.id);
   const home=`<span>Acesso</span><i>›</i><button onclick="go('painel')">Painel geral</button><i>›</i>`;
   const map={painel:'<span>Acesso</span><i>›</i><strong>Painel geral</strong>',cadastro:`${home}<strong>Novo cadastro</strong>`,demanda:`${home}<strong>Abertura de demanda</strong>`};
-  if(c){const t={chat:`Chat ${esc(CID(c.cid).ini)}`,timeline:'Timeline',comprovante:'Comprovante'}[r];map[r]=`${home}<strong>${t}</strong>`}
+  if(c){const t={chat:`Chat ${esc(nomeCid(c))}`,timeline:'Timeline',comprovante:'Comprovante'}[r];map[r]=`${home}<strong>${t}</strong>`}
   $('#crumbs').innerHTML=map[r]||'';
   document.title=`${({painel:'Painel geral',cadastro:'Novo cadastro',demanda:'Abertura de demanda',chat:'Chat da instância',timeline:'Linha do tempo',comprovante:'Comprovante'})[r]} · SeConecta`;
 }
@@ -613,23 +618,20 @@ function filtrados(){
     if(f.topic!==null&&c.topico!==f.topic)return false;
     if(f.sub&&c.sub!==f.sub)return false;
     if(f.urg&&c.urg!==f.urg)return false;
-    if(q&&!`${CID(c.cid).ini} ${prot(c)} ${c.sub} ${TOPICS[c.topico].n} ${c.resumo} ${ativos(c).map(s=>SECS[s].nome).join(' ')}`.toLowerCase().includes(q))return false;
+    if(q&&!`${nomeCid(c)} ${prot(c)} ${c.sub} ${TOPICS[c.topico].n} ${c.resumo} ${ativos(c).map(s=>SECS[s].nome).join(' ')}`.toLowerCase().includes(q))return false;
     return true;
   }).sort((a,b)=>b.urg-a.urg||b.n-a.n);
   return {base,g,list};
 }
 function cardHTML(c){
-  const z=CID(c.cid),at=ativos(c),fechado=c.status==='done';
-  const flag=c.status!=='wait'?'':c.aptas.length?`<p class="ln" style="color:var(--ok);font-weight:600">${c.aptas.length} ${c.aptas.length>1?'secretarias aptas':'secretaria apta'}</p>`:'<p class="ln" style="color:var(--att);font-weight:600">Nenhuma secretaria ofereceu ajuda ainda</p>';
+  const at=ativos(c),fechado=c.status==='done';
+  const flag=c.status!=='wait'?'':c.aptas.length?`<span style="color:var(--ok);font-weight:600">${c.aptas.length} ${c.aptas.length>1?'secretarias aptas':'secretaria apta'}</span>`:'<span style="color:var(--att);font-weight:600">Nenhuma ajuda ofereceu ainda</span>';
   return `<article class="card u${c.urg}">
-    <div class="card-top">${ub(c.urg)}${stChip(c.status)}</div>
-    <h3>${esc(z.ini)} | Cidadão assistido</h3>
-    <p class="ln"><b>Subtópico:</b> ${esc(c.sub)}</p>
-    <p class="ln"><b>Secretaria solicitante:</b> ${SECS[c.solicitante].nome}</p>
-    <p class="ln"><b>Participando:</b> ${at.length?at.map(s=>SECS[s].nome).join(', '):'nenhuma ainda'}</p>
-    <p class="ln"><b>Data:</b> ${esc(c.criado)}</p>
-    ${flag}
-    <div class="card-f"><span class="mono sm t2">#${prot(c)}</span><div class="acts"><button class="lnk" onclick="go('timeline','${c.id}')">Ver detalhes</button><button class="lnk teal" onclick="go('chat','${c.id}')">${fechado?'Ver histórico do chat':'Entrar no chat'}</button></div></div>
+    <div class="card-top"><h3>${esc(nomeCid(c))}</h3><span class="chips">${ub(c.urg)}${stChip(c.status)}</span></div>
+    <p class="ln"><b>${esc(c.sub)}</b></p>
+    <p class="ln">${SECS[c.solicitante].nome} → ${at.length?at.map(s=>SECS[s].nome).join(', '):'ninguém participando'}</p>
+    <p class="ln">${esc(dia(c.criado))} · <span class="mono">#${prot(c)}</span>${flag?'<br>'+flag:''}</p>
+    <div class="card-f"><div class="acts"><button class="lnk" onclick="go('timeline','${c.id}')">Ver detalhes</button><button class="lnk teal" onclick="go('chat','${c.id}')">${fechado?'Histórico do chat':'Entrar no chat'}</button></div></div>
   </article>`;
 }
 const temFiltro=()=>S.f.st||S.f.urg||S.f.topic!==null||S.f.q.trim();
@@ -690,7 +692,7 @@ function cpfInput(el){
   const d=el.value.replace(/\D/g,'').slice(0,11);
   el.value=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2');
   const z=S.cidadaos.find(c=>c.raw===d);
-  $('#dup').innerHTML=z?`<div class="alert a-att" style="margin-top:12px">${ic('alert')}<div><b>Atenção: já existe cadastro com este CPF (${esc(z.ini)}).</b><br><button type="button" class="lnk" onclick="S.draft='${z.id}';go('demanda')">Abrir demanda para ${esc(z.ini)}</button></div></div>`:'';
+  $('#dup').innerHTML=z?`<div class="alert a-att" style="margin-top:12px">${ic('alert')}<div><b>Atenção: já existe cadastro com este CPF (${esc(z.nome)}).</b><br><button type="button" class="lnk" onclick="S.draft='${z.id}';go('demanda')">Abrir demanda para ${esc(z.nome)}</button></div></div>`:'';
 }
 function exemploCad(){
   $('#nome').value='Luiz Santos da Silva';const c=$('#cpf');c.value='44455566677';cpfInput(c);
@@ -708,7 +710,7 @@ function salvarCad(abrir){
   if(showErrors(e))return;
   const z=cid('z'+(S.cidadaos.length+1),nome,raw,nasc,true);
   S.cidadaos.push(z);S.draft=z.id;apagaRasc('cadastro');
-  toast(`Cadastro de ${z.ini} salvo.`);
+  toast(`Cadastro de ${z.nome} salvo.`);
   go(abrir?'demanda':'painel');
 }
 
@@ -758,10 +760,10 @@ function buscaCid(){
   $('#dcid').value='';showCid(false);
   const r=q?S.cidadaos.filter(z=>z.nome.toLowerCase().includes(q)||(d.length>=3&&z.raw.includes(d))):[];
   u.hidden=!q;
-  u.innerHTML=r.length?r.map(z=>`<li><button type="button" onclick="pickCid('${z.id}')"><b>${esc(z.ini)}</b><span class="t2">${idade(z.nasc)} anos · CPF ${cpfMask(z.raw)}</span></button></li>`).join('')
+  u.innerHTML=r.length?r.map(z=>`<li><button type="button" onclick="pickCid('${z.id}')"><b>${esc(z.nome)}</b><span class="t2">${idade(z.nasc)} anos · CPF ${cpfMask(z.raw)}</span></button></li>`).join('')
     :`<li style="padding:12px 16px" class="t2">Nenhum cidadão encontrado. <button type="button" class="lnk" style="display:inline-flex;width:auto;min-height:0;border:0;padding:0" onclick="go('cadastro')">Fazer novo cadastro</button></li>`;
 }
-function pickCid(id){const z=CID(id);$('#dcid').value=id;$('#dbusca').value=`${z.ini} · CPF ${cpfMask(z.raw)}`;$('#sug').hidden=true;showCid(true);guardaRasc()}
+function pickCid(id){const z=CID(id);$('#dcid').value=id;$('#dbusca').value=`${z.nome} · CPF ${cpfMask(z.raw)}`;$('#sug').hidden=true;showCid(true);guardaRasc()}
 function sigChange(){
   const r=(document.querySelector('[name=sig]:checked')||{}).value==='restrito',ts=$('#tsaude'),ta=$('#tassist');
   if(!ts.disabled){ts.checked=ta.checked=r}
@@ -772,8 +774,8 @@ function showCid(){
   if(!z){e.innerHTML='';return}
   if(!z.consent){ts.checked=ta.checked=true;ts.disabled=ta.disabled=true;document.querySelector('[name=sig][value=restrito]').checked=true}
   e.innerHTML=z.consent
-    ?`<div class="alert a-info" style="margin-top:12px">${ic('lock')}<span><b>${esc(z.ini)}, ${idade(z.nasc)} anos.</b> Consentimento registrado no cadastro.</span></div>`
-    :`<div class="alert a-att" style="margin-top:12px">${ic('alert')}<span><b>${esc(z.ini)} não consentiu.</b> Exceção registrada: ${esc(z.excecao)}</span></div>`;
+    ?`<div class="alert a-info" style="margin-top:12px">${ic('lock')}<span><b>${esc(z.nome)}, ${idade(z.nasc)} anos.</b> Consentimento registrado no cadastro.</span></div>`
+    :`<div class="alert a-att" style="margin-top:12px">${ic('alert')}<span><b>${esc(z.nome)} não consentiu.</b> Exceção registrada: ${esc(z.excecao)}</span></div>`;
 }
 function subOpts(){
   const i=$('#dtop').value,s=$('#dsub');
@@ -823,8 +825,8 @@ function caseHead(c,cur){
   const titulo={chat:'Ambiente de resolução (chat da instância)',timeline:'Acompanhamento de execução',comprovante:'Comprovante de encerramento'}[cur];
   const trava=[c.trava.saude&&'saúde',c.trava.assist&&'assistência'].filter(Boolean);
   const bar=cur==='chat'
-    ?`<span><b>Caso:</b> ${esc(z.ini)}</span><span><b>Tópico:</b> ${esc(TOPICS[c.topico].n)}</span><span><b>Status:</b> ${STATUS[c.status][0]}</span>${urgBar(c.urg)}`
-    :`<span><b>Cidadão assistido:</b> ${esc(z.ini)}</span><span><b>Secretaria solicitante:</b> ${sol}</span><span><b>Subtópico:</b> ${esc(c.sub)}</span>${urgBar(c.urg)}`;
+    ?`<span><b>Caso:</b> ${esc(nomeCid(c))}</span><span><b>Tópico:</b> ${esc(TOPICS[c.topico].n)}</span><span><b>Status:</b> ${STATUS[c.status][0]}</span>${urgBar(c.urg)}`
+    :`<span><b>Cidadão assistido:</b> ${esc(nomeCid(c))}</span><span><b>Secretaria solicitante:</b> ${sol}</span><span><b>Subtópico:</b> ${esc(c.sub)}</span>${urgBar(c.urg)}`;
   return `<header class="case-h"><div class="page-h" style="margin-bottom:0;align-items:flex-start"><div><p class="lab">Protocolo #${prot(c)} · aberta em ${esc(c.criado)}</p><h1 style="margin-top:8px">${titulo}</h1></div>
     ${cur==='chat'?'':`<span class="chip ${STATUS[c.status][1]}" style="font-size:15px;min-height:40px">Status: ${STATUS[c.status][0]}</span>`}</div>
     <div class="casebar">${bar}</div>

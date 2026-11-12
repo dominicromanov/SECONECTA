@@ -823,7 +823,7 @@ function criarDemanda(){
     log:[{t:h,txt:`Demanda aberta pela ${SECS[v].nome}`},{t:h,txt:notifTxt({solicitante:v})}]};
   if(!z.consent)c.log.push({t:h,txt:`Encaminhamento por exceção, sem consentimento: ${z.excecao}`});
   S.cases.push(c);S.draft=null;S.files=[];apagaRasc('demanda');
-  if(SIM&&v==='as')agendaSim(c,planoAbertura(c));
+  if(SIM&&v==='as')c.simIniciado=true;agendaSim(c,planoAbertura(c));
   toast(`Demanda #${prot(c)} criada. Notificação entregue.`);
   go('chat',c.id);
 }
@@ -896,7 +896,11 @@ function vChat(c){
 function enviar(id){
   const c=C(id),t=$('#mtxt').value.trim();if(!t&&!S.cfiles.length){$('#mtxt').focus();return}
   c.msgs.push({de:S.viewer,txt:t||'Arquivo anexado.',hora:fmt(),anexos:[...S.cfiles]});S.cfiles=[];reg('mensagem_enviada',{caso:id});
-  if(SIM&&c.status==='wait'&&S.viewer===c.solicitante&&(c.simAguarda||[]).length)c.simAguarda.forEach(k=>agendaSim(c,[[10,'aceita',k]]));render();
+  if(SIM&&S.viewer===c.solicitante&&c.status!=='done'){
+    if(c.status==='wait'&&(c.simAguarda||[]).length)c.simAguarda.forEach(k=>agendaSim(c,[[10,'aceita',k]]));
+    else if(c.status==='wait'&&!c.simIniciado){c.simIniciado=true;agendaSim(c,planoAbertura(c))}   /* casos de exemplo: começam a responder na 1ª mensagem */
+    else if(!(c.simFila||[]).length){const k=ativos(c)[0]||PARC_SIM(c);if(k)agendaSim(c,[[8,'ack',k]])}
+  }render();
   const m=$('#mtxt');if(m)m.focus();
 }
 function teclaMsg(e,id){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();enviar(id)}}
@@ -1269,8 +1273,10 @@ function planoEntrega(c,k){
   return [[15,'exec',k],[50,'ok',k]];
 }
 function agendaSim(c,fila){c.simFila=(c.simFila||[]).concat(fila.map(([seg,tipo,sec])=>({at:Date.now()+seg*1000,tipo,sec})))}
+const PARC_SIM=c=>Object.keys(SECS).find(k=>k!==c.solicitante&&c.env[k]);
 function rodaSim(c,x){
   if(c.status==='done')return null;
+  if(x.tipo==='ack'){c.msgs.push({de:x.sec,txt:'Recebido. Assim que houver novidade, retorno por aqui.',hora:fmt(),anexos:[]});return `${SECS[x.sec].nome} respondeu no chat`}
   const s=x.sec,h=fmt(),n=SECS[s].nome,txt=(SIMTXT[s]||{})[x.tipo]||'Ok, estamos acompanhando.';
   const entra=()=>{if(c.env[s]!=='ativo'){c.env[s]='ativo';c.msgs.push({evt:true,txt:`${n} passou a participar ativamente`,hora:h});c.log.push({t:h,txt:`${n} passou a participar ativamente`})}};
   if(['apta','pergunta','recusa','aceita','lembrete'].includes(x.tipo)){

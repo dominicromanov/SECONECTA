@@ -557,12 +557,16 @@ const logPush=(c,txt)=>c.log.push({t:fmt(),txt});
 function inicLido(){for(const c of S.cases){c.lido=c.lido||{};for(const k of Object.keys(SECS))if(c.lido[k]===undefined)c.lido[k]=c.msgs.length}}
 function marcaLido(c){if(!c)return;c.lido=c.lido||{};c.lido[S.viewer]=c.msgs.length}
 const lidoIdx=(c,v)=>(c.lido&&c.lido[v]!==undefined)?c.lido[v]:c.msgs.length;
-const novas=(c,v)=>c.msgs.slice(lidoIdx(c,v)).filter(m=>m.de?m.de!==v:/apta|entrega/.test(m.txt||''));
+const novas=(c,v)=>!podeVer(c,v)?[]:c.msgs.slice(lidoIdx(c,v)).filter(m=>m.de?m.de!==v:/apta|entrega/.test(m.txt||''));
 const tms=h=>{const m=/(\d+)\/(\d+)\/(\d+) às (\d+):(\d+)/.exec(h||'');return m?new Date(+m[3],m[2]-1,+m[1],+m[4],+m[5]).getTime():0};
 const todasNovas=()=>visiveis().flatMap(c=>novas(c,S.viewer).map(m=>({c,m}))).sort((a,b)=>tms(b.m.hora)-tms(a.m.hora));
 function marcaTodas(){reg('novidades_lidas');S.cases.forEach(marcaLido);render()}
 /* Nome do cidadão: completo para a solicitante, ou com sigilo geral e consentimento; senão, só iniciais */
-function nomeCid(c){const z=CID(c.cid);return (S.viewer===c.solicitante||(z.consent&&c.sigilo==='geral'))?z.nome:z.ini}
+/* Acesso ao caso: em "restrito", só a solicitante e as secretarias liberadas (c.acesso) veem relato, chat e anexos.
+   Casos antigos sem c.acesso: liberadas = as que já participam ativamente. */
+const liberadas=c=>Array.isArray(c.acesso)?c.acesso:Object.keys(SECS).filter(k=>k!==c.solicitante&&c.env[k]==='ativo');
+function podeVer(c,v){return v===c.solicitante||c.sigilo!=='restrito'||liberadas(c).includes(v)}
+function nomeCid(c){const z=CID(c.cid);return (S.viewer===c.solicitante||(z.consent&&podeVer(c,S.viewer)))?z.nome:z.ini}
 
 async function sha(s){
   try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -625,6 +629,7 @@ function shell(){
 function render(){
   const r=S.route;
   if(r.id&&!C(r.id)){S.route={name:'painel'};return render()}
+  if(r.id&&!podeVer(C(r.id),S.viewer)){S.route={name:'painel'};toast('Este caso é restrito e a sua secretaria não tem acesso.');return render()}
   render.entrou=false;
   if(r.name==='chat'){
     const c0=C(r.id),entrando=(r.name+r.id+S.viewer)!==render.ult;render.entrou=entrando;
@@ -649,12 +654,16 @@ function filtrados(){
     if(f.topic!==null&&c.topico!==f.topic)return false;
     if(f.sub&&c.sub!==f.sub)return false;
     if(f.urg&&c.urg!==f.urg)return false;
-    if(q&&!`${nomeCid(c)} ${prot(c)} ${c.sub} ${TOPICS[c.topico].n} ${c.resumo} ${ativos(c).map(s=>SECS[s].nome).join(' ')}`.toLowerCase().includes(q))return false;
+    if(q&&!(podeVer(c,S.viewer)?`${nomeCid(c)} ${prot(c)} ${c.sub} ${TOPICS[c.topico].n} ${c.resumo} ${ativos(c).map(s=>SECS[s].nome).join(' ')}`:`${nomeCid(c)} ${prot(c)} ${TOPICS[c.topico].n}`).toLowerCase().includes(q))return false;
     return true;
   }).sort((a,b)=>b.urg-a.urg||b.n-a.n);
   return {base,g,list};
 }
 function cardHTML(c){
+  if(!podeVer(c,S.viewer))return `<article class="card u${c.urg}"><div class="card-top"><h3>${esc(nomeCid(c))}</h3><span class="chips">${ub(c.urg)}${stChip(c.status)}</span></div>
+    <p class="ln"><b>${esc(TOPICS[c.topico].n)}</b></p>
+    <p class="ln">${SECS[c.solicitante].nome} · ${esc(dia(c.criado))} · <span class="mono">#${prot(c)}</span></p>
+    <p class="ln" style="color:var(--text);display:flex;gap:6px;align-items:center">${ic('lock',16)}<b>Conteúdo restrito.</b> Sua secretaria não tem acesso a este caso.</p></article>`;
   const at=ativos(c),fechado=c.status==='done';
   const flag=c.status!=='wait'?'':c.aptas.length?`<span style="color:var(--ok);font-weight:600">${c.aptas.length} ${c.aptas.length>1?'secretarias aptas':'secretaria apta'}</span>`:'<span style="color:var(--att);font-weight:600">Nenhuma secretaria ofereceu ajuda ainda</span>';
   return `<article class="card u${c.urg}">
@@ -781,7 +790,10 @@ function vDemanda(){
     <div class="field" id="f-sig" style="margin-top:24px"><span class="lbl">Seletor de visualização (nível de sigilo) *</span>
       <label class="choice"><input type="radio" name="sig" value="geral" checked onchange="sigChange()"><div><b>Acesso geral</b><span>Dados básicos identificáveis visíveis para as demais secretarias.</span></div></label>
       <label class="choice"><input type="radio" name="sig" value="restrito" onchange="sigChange()"><div><b>Acesso restrito</b><span>Bloqueio de dados sensíveis de saúde e assistência. As demais secretarias veem só as iniciais e a idade.</span></div></label>
-      <p class="hint">Definido por demanda: o mesmo cidadão pode ter níveis diferentes em casos diferentes.</p></div>
+      <p class="hint">Definido por demanda: o mesmo cidadão pode ter níveis diferentes em casos diferentes.</p>
+      <fieldset class="field" id="f-acesso" hidden style="border:1px solid var(--soft);border-radius:8px;padding:16px 20px;margin:16px 0 0"><legend class="lbl" style="padding:0 8px;margin:0">Quem pode ver o relato, os anexos e as mensagens?</legend>
+        ${parcs({solicitante:S.viewer}).map(k=>`<label class="chk"><input type="checkbox" id="ac-${k}" name="acesso" value="${k}"> ${SECS[k].nome}</label>`).join('')}
+        <p class="hint">Quem não for marcada vê só as iniciais, o tópico e a urgência. A sua secretaria sempre vê.</p></fieldset></div>
   </section>
   <section class="box"><div class="box-h"><p class="lab">Detalhamento e anexos</p></div>
     <div class="field"><label class="lbl" for="dres">Justificativa resumida da necessidade *</label><textarea class="inp" id="dres" rows="4"></textarea></div>
@@ -791,7 +803,7 @@ function vDemanda(){
   <div class="foot"><button type="button" class="btn btn-secondary" onclick="cancelarForm('demanda')">Cancelar</button><button type="button" class="btn btn-primary" onclick="criarDemanda()">Criar e instanciar demanda</button></div>
   </form>`;
 }
-function initDemanda(){const rec=restauraRasc('demanda');if(S.draft)pickCid(S.draft);avisoRasc('demanda',rec)}
+function initDemanda(){const rec=restauraRasc('demanda');if(S.draft)pickCid(S.draft);acessoVis();avisoRasc('demanda',rec)}
 function buscaCid(){
   const q=$('#dbusca').value.trim().toLowerCase(),d=q.replace(/\D/g,''),u=$('#sug');
   $('#dcid').value='';showCid(false);
@@ -804,12 +816,14 @@ function pickCid(id){const z=CID(id);$('#dcid').value=id;$('#dbusca').value=`${z
 function sigChange(){
   const r=(document.querySelector('[name=sig]:checked')||{}).value==='restrito',ts=$('#tsaude'),ta=$('#tassist');
   if(!ts.disabled){ts.checked=ta.checked=r}
+  acessoVis();
 }
+function acessoVis(){const f=$('#f-acesso');if(f)f.hidden=(document.querySelector('[name=sig]:checked')||{}).value!=='restrito'}
 function showCid(){
   const z=CID($('#dcid').value),e=$('#cidinfo'),ts=$('#tsaude'),ta=$('#tassist');
   ts.disabled=ta.disabled=false;
   if(!z){e.innerHTML='';return}
-  if(!z.consent){ts.checked=ta.checked=true;ts.disabled=ta.disabled=true;document.querySelector('[name=sig][value=restrito]').checked=true}
+  if(!z.consent){ts.checked=ta.checked=true;ts.disabled=ta.disabled=true;document.querySelector('[name=sig][value=restrito]').checked=true;acessoVis()}
   e.innerHTML=z.consent
     ?`<div class="alert a-info" style="margin-top:12px">${ic('lock')}<span><b>${esc(z.nome)}, ${idade(z.nasc)} anos.</b> Consentimento registrado no cadastro.</span></div>`
     :`<div class="alert a-att" style="margin-top:12px">${ic('alert')}<span><b>${esc(z.nome)} não consentiu.</b> Exceção registrada: ${esc(z.excecao)}</span></div>`;
@@ -849,6 +863,10 @@ function criarDemanda(){
     aptas:[],compromissos:[],checks:[false,false,false],notas:'',entrega:'',desfecho:'',
     msgs:[{de:v,txt:res,hora:h,anexos:[...S.files]}],
     log:[{t:h,txt:`Demanda aberta pela ${SECS[v].nome}`},{t:h,txt:notifTxt({solicitante:v})}]};
+  if(c.sigilo==='restrito'){
+    c.acesso=$$('#f-acesso [name=acesso]:checked').map(e=>e.value);
+    c.log.push({t:h,txt:`Acesso restrito: ${c.acesso.length?'liberado para '+lista(c.acesso.map(k=>SECS[k].nome)):'nenhuma outra secretaria tem acesso ao conteúdo'}`});
+  }
   if(!z.consent)c.log.push({t:h,txt:`Encaminhamento por exceção, sem consentimento: ${z.excecao}`});
   c.lido={};Object.keys(SECS).forEach(k=>c.lido[k]=(k===v?1:0));
   S.cases.push(c);S.draft=null;S.files=[];apagaRasc('demanda');
@@ -869,7 +887,7 @@ function caseHead(c,cur){
   return `<header class="case-h"><div class="page-h" style="margin-bottom:0;align-items:flex-start"><div><p class="lab">Protocolo #${prot(c)} · aberta em ${esc(c.criado)}</p><h1 style="margin-top:8px">${titulo}</h1></div>
     ${cur==='chat'?'':`<span class="chip ${STATUS[c.status][1]}" style="font-size:15px;min-height:40px">Status: ${STATUS[c.status][0]}</span>`}</div>
     <div class="casebar">${bar}</div>
-    <p class="sm t2" style="margin-top:8px;display:flex;gap:8px;align-items:center">${ic('lock',16)}<span>Nível de sigilo: ${c.sigilo==='restrito'?'Acesso restrito':'Acesso geral'}${trava.length?` · Trava de privacidade LGPD: dados de ${lista(trava)} restritos à secretaria da área e à solicitante`:''}.</span></p>
+    <p class="sm t2" style="margin-top:8px;display:flex;gap:8px;align-items:center">${ic('lock',16)}<span>Nível de sigilo: ${c.sigilo==='restrito'?`Acesso restrito (liberado para ${liberadas(c).length?lista(liberadas(c).map(k=>SECS[k].nome)):'nenhuma outra secretaria'})`:'Acesso geral'}${trava.length?` · Trava de privacidade LGPD: dados de ${lista(trava)} restritos à secretaria da área e à solicitante`:''}.</span></p>
     ${c.justUrg?`<div class="alert ${c.urg===3?'a-err':'a-att'}" style="margin-top:16px">${ic('alert')}<span><b>Justificativa da urgência:</b> ${esc(c.justUrg)}</span></div>`:''}
   </header>
   <div class="tabs" role="tablist">${[['chat','Chat da instância'],['timeline','Linha do tempo']].concat(c.status==='done'?[['comprovante','Comprovante']]:[]).map(([k,t])=>`<button class="tab" role="tab" aria-selected="${cur===k}" onclick="go('${k}','${c.id}')">${t}</button>`).join('')}</div>`;
@@ -980,7 +998,7 @@ function cancelar(id){
 /* ===== Tela 5: Linha do tempo ===== */
 const ENTC={'Aguardando':'s-att','Em execução':'s-info','Concluída':'s-ok','Inviabilizada':'s-err','Desvinculada':'s-err','Dispensada':''};
 function vTimeline(c){
-  const v=S.viewer,isSol=v===c.solicitante,ef=etapaEf(c),z=CID(c.cid),full=isSol||(z.consent&&c.sigilo==='geral');
+  const v=S.viewer,isSol=v===c.solicitante,ef=etapaEf(c),z=CID(c.cid),full=isSol||(z.consent&&podeVer(c,v));
   const steps=`<ol class="steps" aria-label="Linha do tempo multissecretarial">${ETAPAS.map((t,i)=>{const n=i+1,cl=n<ef?'done':n===ef?'cur':'',st=n<ef?'Concluída':n===ef?'Atual':'Pendente';return `<li class="step ${cl}" ${n===ef?'aria-current="step"':''}><span class="node">${n<ef?ic('check',18):n}</span><div><b>Etapa ${n}</b><span class="nm">${t}</span><span>${st}</span></div></li>`}).join('')}</ol>`;
   const cards=c.compromissos.map(x=>`<article class="ent ${ENTC[x.status]}"><b>Sec. ${SECS[x.sec].nome} – ${esc(x.titulo)}</b><span class="t2">Responsável: ${SECS[x.sec].resp}</span><span class="chip ${ENT[x.status]}">${x.status}</span>${x.just?`<p class="why">Justificativa: ${esc(x.just)}</p>`:''}</article>`).join('');
   const pend=c.compromissos.filter(x=>!RESOLV.includes(x.status));
@@ -1406,7 +1424,7 @@ function textoSim(c,s,tipo,ctx){
 function respSel(c,t){
   const tg=tagsDe(t),ja=Object.keys(SECS).filter(k=>k!==c.solicitante&&(c.env[k]==='ativo'||c.aptas.includes(k)));
   const fit=(tg.has('crise')||tg.has('violencia')||tg.has('saude')||tg.has('emocional'))?'sau':tg.has('crianca')?'edu':(tg.has('vaga')||tg.has('rua')||tg.has('acolhe')||tg.has('perda')||tg.has('semdoc')||tg.has('semcad')||tg.has('temcad'))?'hab':null;
-  if(fit&&(ja.includes(fit)||c.status==='wait'))return fit;
+  if(fit&&podeVer(c,fit)&&(ja.includes(fit)||c.status==='wait'))return fit;
   const ult=[...c.msgs].reverse().find(m=>m.de&&m.de!==c.solicitante);
   return (ult&&ult.de)||ja[0]||null;
 }
@@ -1480,7 +1498,7 @@ function planoAbertura(c){
     f.push([seg,x.k,s]);
     if(x.k==='pergunta')f.push([seg+70,'lembrete',s]);
   }
-  return f.filter(([,,sec])=>!c.aptas.includes(sec));   /* quem já está apta no exemplo não repete */
+  return f.filter(([,,sec])=>!c.aptas.includes(sec)&&podeVer(c,sec));   /* quem já está apta no exemplo não repete */
 }
 function planoEntrega(c,k){
   const x=cfgSub(c)[k]||{};
@@ -1488,7 +1506,7 @@ function planoEntrega(c,k){
 }
 function agendaSim(c,fila){c.simFila=(c.simFila||[]).concat(fila.map(([seg,tipo,sec,ctx])=>({at:Date.now()+seg*1000,tipo,sec,ctx})))}
 function rodaSim(c,x){
-  if(c.status==='done')return null;
+  if(c.status==='done'||!podeVer(c,x.sec))return null;
   const s=x.sec,h=fmt(),n=SECS[s].nome,txt=textoSim(c,s,x.tipo,x.ctx);
   const entra=()=>{if(c.env[s]!=='ativo'){c.env[s]='ativo';c.msgs.push({evt:true,txt:`${n} passou a participar ativamente`,hora:h});c.log.push({t:h,txt:`${n} passou a participar ativamente`})}};
   if(x.tipo==='ack'){if(c.status==='wait')entra();c.msgs.push({de:s,txt,hora:h,anexos:[]});return `${n} respondeu no chat`}

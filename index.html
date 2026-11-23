@@ -262,7 +262,12 @@ select.inp{appearance:none;padding-right:44px;background:#fff url("data:image/sv
 .msg-h span{color:var(--text-2)}
 .msg-h time{margin-left:auto;color:var(--text-2);font-size:13px}
 .bubble{background:var(--bg);border:1px solid var(--soft);border-radius:4px 12px 12px 12px;padding:12px 16px;white-space:pre-wrap;overflow-wrap:anywhere}
-.msg.me .bubble{background:var(--blue-50);border-color:var(--blue-100)}
+.msg.me{grid-template-columns:minmax(0,1fr) 40px}
+.msg.me>.av{grid-column:2;grid-row:1}
+.msg.me>div{grid-column:1;grid-row:1;display:flex;flex-direction:column;align-items:flex-end;min-width:0}
+.msg.me .msg-h{justify-content:flex-end}
+.msg.me .msg-h time{margin-left:0}
+.msg.me .bubble{background:var(--blue);color:#fff;border-color:var(--blue);border-radius:12px 4px 12px 12px;max-width:100%}
 .att{display:inline-flex;align-items:center;gap:8px;margin:8px 8px 0 0;padding:8px 12px;border:1px solid var(--soft);border-radius:var(--r-field);background:#fff;font-size:14px;color:var(--text);white-space:normal}
 .att small{color:var(--text-2)}
 .evt{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-2);text-align:center}
@@ -592,11 +597,21 @@ function ask(o,cb){
 function showErrors(list){
   $$('.invalid').forEach(e=>e.classList.remove('invalid'));$$('.ferr').forEach(e=>e.remove());
   const box=$('#errsum');
-  if(!list.length){box.hidden=true;return false}
+  if(!list.length){box.hidden=true;const e0=$('#errfoot');if(e0)e0.hidden=true;return false}
   box.hidden=false;reg('erro_validacao',{itens:list.map(e=>e.msg)});
   box.innerHTML=`${ic('alert')}<div><b>${list.length===1?'Falta 1 item para continuar':`Faltam ${list.length} itens para continuar`}</b><ul>${list.map(e=>`<li><a href="#${e.id}">${esc(e.msg)}</a></li>`).join('')}</ul></div>`;
   list.forEach(e=>{const el=document.getElementById(e.id);if(!el)return;const f=el.closest('.field')||el;f.classList.add('invalid');f.insertAdjacentHTML('beforeend',`<p class="ferr">Erro: ${esc(e.msg.charAt(0).toLowerCase()+e.msg.slice(1))}</p>`)});
-  box.focus();box.scrollIntoView({block:'start',behavior:'smooth'});return true;
+  /* aviso também junto dos botões (onde a pessoa clicou) e foco no primeiro campo com erro */
+  const foot=document.querySelector('#main form .foot');let ef=$('#errfoot');
+  if(foot){
+    if(!ef){ef=document.createElement('div');ef.id='errfoot';ef.className='alert a-err';ef.setAttribute('role','alert');ef.style.marginBottom='16px';foot.parentNode.insertBefore(ef,foot)}
+    ef.hidden=false;
+    ef.innerHTML=`${ic('alert')}<div><b>${list.length===1?'Falta 1 item para continuar':`Faltam ${list.length} itens para continuar`}:</b> ${list.map(e=>esc(e.msg)).join(' ')}</div>`;
+  }
+  const el0=document.getElementById(list[0].id);
+  if(el0){const f1=el0.matches('input,select,textarea,button')?el0:(el0.querySelector('input,select,textarea,button')||el0);if(f1===el0&&!el0.hasAttribute('tabindex'))el0.setAttribute('tabindex','-1');f1.focus({preventScroll:true});f1.scrollIntoView({block:'center',behavior:'smooth'})}
+  else{box.focus();box.scrollIntoView({block:'start',behavior:'smooth'})}
+  return true;
 }
 
 /* ===== Navegação ===== */
@@ -695,18 +710,19 @@ function vPainel(){
   return `<div class="page-h"><div><p class="lab">Secretaria de ${SECS[v].nome}</p><h1>Painel geral de demandas</h1><p class="t2">Olá, ${SECS[v].resp.split(' ')[0]}. ${g.abertos.length} ${g.abertos.length===1?'chat aberto':'chats abertos'} e ${g.proc.length} em processo.</p></div>
     <div class="actions"><button class="btn btn-secondary" onclick="go('cadastro')">${ic('userPlus')}Novo cadastro</button><button class="btn btn-primary" onclick="S.draft=null;go('demanda')">${ic('plus')}Nova demanda</button></div></div>
   ${quadroNovas()}
-  <section class="kpis" aria-label="Filtros de status">${KPI.map(([k,t,i,col])=>`<button class="kpi" style="--bar:${col}" aria-pressed="${f.st===k}" onclick="setSt('${k}')"><span style="color:${col}">${ic(i,32)}</span><b>${t}</b><small>${f.st===k?'Filtro ativo · clique para remover':'Clique para filtrar'}</small><span class="num">${g[k].length}</span></button>`).join('')}</section>
+  <p class="lab" style="margin:0 0 8px">Situação dos casos</p>
+  <section class="kpis" aria-label="Situação dos casos (filtros)">${KPI.map(([k,t,i,col])=>`<button class="kpi" style="--bar:${col}" aria-pressed="${f.st===k}" onclick="setSt('${k}')"><span style="color:${col}">${ic(i,32)}</span><b>${t}</b><small>${f.st===k?'Filtro ativo · clique para remover':'Clique para filtrar'}</small><span class="num">${g[k].length}</span></button>`).join('')}</section>
   <div class="filters">
     <div class="search">${ic('search')}<label class="sr" for="q">Buscar</label><input class="inp" id="q" type="search" value="${esc(f.q)}" placeholder="Buscar por palavra-chave ou protocolo…" oninput="S.f.q=this.value;updFeed()"></div>
     <div class="urgf" role="group" aria-label="Filtros de urgência"><span class="sm t2">Filtros de urgência:</span>${[1,2,3].map(u=>`<button class="fchip" aria-pressed="${f.urg===u}" onclick="setUrg(${u})">Nível ${u} (${URG_NOME[u]})</button>`).join('')}</div>
   </div>
   <div class="board">
-    <details class="topics" ${aberto?'open':''}><summary class="lab">Tópicos e subtópicos</summary><nav aria-label="Tópicos"><ul>
+    <details class="topics" ${aberto?'open':''}><summary class="lab">Filtrar por tópico</summary><nav aria-label="Tópicos"><ul>
       ${TOPICS.map((t,i)=>`<li><button class="tp ${f.topic===i&&!f.sub?'on':''}" aria-expanded="${f.topic===i}" onclick="setTopic(${i})"><span>${i+1}. ${esc(t.n)}</span><span class="c">${cnt(i)}</span></button>
         ${f.topic===i?`<ul>${t.subs.map(([s],j)=>`<li><button class="tp sub ${f.sub===s?'on':''}" onclick="setSub(${i},${j})"><span>${esc(s)}</span><span class="c">${cntS(s)}</span></button></li>`).join('')}</ul>`:''}</li>`).join('')}
     </ul></nav></details>
     <section aria-label="Feed geral de demandas">
-      <div class="box-h"><p class="lab">Feed geral de demandas</p><div class="actions">${feedHead(list.length)}${temFiltro()?'<button class="lnk" onclick="limpar()">Limpar filtros</button>':''}</div></div>
+      <div class="box-h"><p class="lab">Demandas</p><div class="actions">${feedHead(list.length)}${temFiltro()?'<button class="lnk" onclick="limpar()">Limpar filtros</button>':''}</div></div>
       <div class="feed" id="feed">${list.length?list.map(cardHTML).join(''):emptyHTML()}</div>
     </section>
   </div>`;

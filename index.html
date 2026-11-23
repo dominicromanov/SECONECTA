@@ -861,7 +861,7 @@ function criarDemanda(){
     sigilo:document.querySelector('[name=sig]:checked').value,
     trava:{saude:$('#tsaude').checked,assist:$('#tassist').checked},
     aptas:[],compromissos:[],checks:[false,false,false],notas:'',entrega:'',desfecho:'',
-    msgs:[{de:v,txt:res,hora:h,anexos:[...S.files]}],
+    msgs:[{de:v,txt:res,hora:h,ts:Date.now(),anexos:[...S.files]}],
     log:[{t:h,txt:`Demanda aberta pela ${SECS[v].nome}`},{t:h,txt:notifTxt({solicitante:v})}]};
   if(c.sigilo==='restrito'){
     c.acesso=$$('#f-acesso [name=acesso]:checked').map(e=>e.value);
@@ -887,7 +887,7 @@ function caseHead(c,cur){
   return `<header class="case-h"><div class="page-h" style="margin-bottom:0;align-items:flex-start"><div><p class="lab">Protocolo #${prot(c)} · aberta em ${esc(c.criado)}</p><h1 style="margin-top:8px">${titulo}</h1></div>
     ${cur==='chat'?'':`<span class="chip ${STATUS[c.status][1]}" style="font-size:15px;min-height:40px">Status: ${STATUS[c.status][0]}</span>`}</div>
     <div class="casebar">${bar}</div>
-    <p class="sm t2" style="margin-top:8px;display:flex;gap:8px;align-items:center">${ic('lock',16)}<span>Nível de sigilo: ${c.sigilo==='restrito'?`Acesso restrito (liberado para ${liberadas(c).length?lista(liberadas(c).map(k=>SECS[k].nome)):'nenhuma outra secretaria'})`:'Acesso geral'}${trava.length?` · Trava de privacidade LGPD: dados de ${lista(trava)} restritos à secretaria da área e à solicitante`:''}.</span></p>
+    <p class="sm t2" style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${ic('lock',16)}<span>Nível de sigilo: ${c.sigilo==='restrito'?`Acesso restrito (liberado para ${liberadas(c).length?lista(liberadas(c).map(k=>SECS[k].nome)):'nenhuma outra secretaria'})`:'Acesso geral'}${trava.length?` · Trava de privacidade LGPD: dados de ${lista(trava)} restritos à secretaria da área e à solicitante`:''}.</span>${c.sigilo==='restrito'&&S.viewer===c.solicitante&&c.status!=='done'?`<button class="lnk" style="min-height:48px" onclick="alteraAcesso('${c.id}')">Alterar quem vê</button>`:''}</p>
     ${c.justUrg?`<div class="alert ${c.urg===3?'a-err':'a-att'}" style="margin-top:16px">${ic('alert')}<span><b>Justificativa da urgência:</b> ${esc(c.justUrg)}</span></div>`:''}
   </header>
   <div class="tabs" role="tablist">${[['chat','Chat da instância'],['timeline','Linha do tempo']].concat(c.status==='done'?[['comprovante','Comprovante']]:[]).map(([k,t])=>`<button class="tab" role="tab" aria-selected="${cur===k}" onclick="go('${k}','${c.id}')">${t}</button>`).join('')}</div>`;
@@ -912,7 +912,7 @@ function vChat(c){
   const escreve=!fechado&&(isSol||papel==='ativo'),at=ativos(c),ps=passivos(c),nv=naoVistas(c);
   const sepI=(S.sep&&S.sep.id===c.id)?S.sep.i:-1;
   const msgs=c.msgs.map((m,i)=>(i===sepI?'<div class="evt" id="novasep" style="color:var(--blue);font-weight:600">Novas mensagens</div>':'')+(m.evt?`<div class="evt">${esc(m.txt)} · ${hora(m.hora)}</div>`
-    :`<div class="msg ${m.de===v?'me':''}">${av(m.de)}<div><div class="msg-h"><b>${SECS[m.de].resp}</b><span>${SECS[m.de].nome}${m.de===sol?' (solicitante)':''}</span><time>${esc(m.hora)}</time></div><div class="bubble">${esc(m.txt)}</div>${(m.anexos||[]).map(a=>`<span class="att">${ic('clip',16)}${esc(a.n)} <small>${kb(a.s)}</small></span>`).join('')}</div></div>`)).join('');
+    :`<div class="msg ${m.de===v?'me':''}">${av(m.de)}<div><div class="msg-h"><b>${SECS[m.de].resp}</b><span>${SECS[m.de].nome}${m.de===sol?' (solicitante)':''}</span><time>${esc(m.hora)}${m.ed?' · editada':''}</time></div><div class="bubble">${esc(m.txt)}</div>${acoesMsg(c,m,i)}${(m.anexos||[]).map(a=>`<span class="att">${ic('clip',16)}${esc(a.n)} <small>${kb(a.s)}</small></span>`).join('')}</div></div>`)).join('');
   const row=(s,extra)=>`<li>${av(s)}<div class="who2"><b>${SECS[s].nome}</b><span>${SECS[s].resp}</span></div>${extra||''}</li>`;
   const chipAt=s=>c.aptas.includes(s)?'<span class="chip c-ok">Apta</span>':(c.recusou||[]).includes(s)?'<span class="chip c-err">Não pode ajudar</span>':(aberto?'<span class="chip c-att">Sem resposta</span>':'');
   return `${caseHead(c,'chat')}
@@ -941,9 +941,55 @@ function vChat(c){
       <button class="btn btn-primary" ${c.aptas.length?'':'disabled'} onclick="aceitar('${c.id}')">Confirmar aceite e iniciar processo</button></div></div>`
     :`<div class="actionbar"><span class="t2">Somente a secretaria solicitante confirma o aceite.</span></div>`):''}`;
 }
+/* Corrigir mensagem: só quem enviou, até 24 h depois, enquanto o caso não estiver encerrado. A versão anterior fica guardada. */
+const JANELA_MS=24*60*60*1000;
+function acoesMsg(c,m,i){
+  const b=[],st='style="min-height:48px;font-size:14px"';
+  if(m.hist&&m.hist.length)b.push(`<button class="lnk" ${st} onclick="verHist('${c.id}',${i})">Ver versão anterior</button>`);
+  if(m.de===S.viewer&&c.status!=='done'&&Date.now()-(m.ts||tms(m.hora))<JANELA_MS)b.push(`<button class="lnk" ${st} onclick="corrigir('${c.id}',${i})" title="Você pode corrigir por 24 horas depois do envio">Corrigir</button>`);
+  return b.length?`<div style="display:flex;gap:16px;flex-wrap:wrap">${b.join('')}</div>`:'';
+}
+function corrigir(id,i){
+  const c=C(id),m=c.msgs[i];if(!m||m.de!==S.viewer)return;
+  painel({title:'Corrigir mensagem',ok:'Salvar correção',
+    html:`<p>Você pode corrigir esta mensagem até 24 horas depois do envio. A versão anterior fica guardada no histórico do caso.</p><div class="field" style="margin-top:16px"><label class="lbl" for="corr">Mensagem *</label><textarea class="inp" id="corr" rows="4">${esc(m.txt)}</textarea></div>`,
+    run(){
+      const t=$('#corr').value.trim();
+      if(!t)return 'a mensagem não pode ficar vazia.';
+      if(t===m.txt)return 'nenhuma alteração foi feita.';
+      if(Date.now()-(m.ts||tms(m.hora))>=JANELA_MS)return 'o prazo de 24 horas para corrigir terminou.';
+      (m.hist=m.hist||[]).push({txt:m.txt,em:fmt()});
+      if(i===0&&c.resumo===m.txt)c.resumo=t;
+      m.txt=t;m.ed=fmt();
+      logPush(c,`${SECS[S.viewer].nome} corrigiu uma mensagem (versão anterior preservada)`);
+      toast('Mensagem corrigida.');render();
+    }});
+}
+function verHist(id,i){
+  const m=C(id).msgs[i];
+  painel({title:'Versões anteriores da mensagem',html:`<ul style="margin-top:12px">${(m.hist||[]).map(h=>`<li><b>${esc(h.em)}</b><br>${esc(h.txt)}</li>`).join('')}</ul><p class="hint">Versão atual, corrigida em ${esc(m.ed||'')}: ${esc(m.txt)}</p>`});
+}
+/* Alterar quem vê um caso restrito (só a solicitante) */
+function alteraAcesso(id){
+  const c=C(id),atual=liberadas(c);
+  painel({title:'Alterar quem vê este caso',ok:'Salvar acesso',
+    html:`<p>Marque as secretarias que podem ver o relato, os anexos e as mensagens. As demais veem só as iniciais, o tópico e a urgência.</p><div class="field" style="margin-top:16px">${parcs(c).map(k=>`<label class="chk"><input type="checkbox" name="acs" value="${k}" ${atual.includes(k)?'checked':''}> ${SECS[k].nome}</label>`).join('')}</div>`,
+    run(){
+      const nv=$$('#dlg [name=acs]:checked').map(e=>e.value),add=nv.filter(k=>!atual.includes(k)),rem=atual.filter(k=>!nv.includes(k));
+      c.acesso=nv;
+      if(add.length)logPush(c,`Acesso liberado para ${lista(add.map(k=>SECS[k].nome))} pela ${SECS[c.solicitante].nome}`);
+      if(rem.length)logPush(c,`Acesso removido de ${lista(rem.map(k=>SECS[k].nome))} pela ${SECS[c.solicitante].nome}`);
+      if(add.length||rem.length){
+        c.msgs.push({evt:true,txt:`Acesso atualizado: ${nv.length?'liberado para '+lista(nv.map(k=>SECS[k].nome)):'só a solicitante vê o conteúdo'}`,hora:fmt()});
+        if(SIM&&c.status==='wait')agendaSim(c,planoAbertura(c).filter(([,,sec])=>add.includes(sec)));
+        toast('Acesso atualizado.');
+      }
+      render();
+    }});
+}
 function enviar(id){
   const c=C(id),t=$('#mtxt').value.trim();if(!t&&!S.cfiles.length){$('#mtxt').focus();return}
-  c.msgs.push({de:S.viewer,txt:t||'Arquivo anexado.',hora:fmt(),anexos:[...S.cfiles]});S.cfiles=[];reg('mensagem_enviada',{caso:id});
+  c.msgs.push({de:S.viewer,txt:t||'Arquivo anexado.',hora:fmt(),ts:Date.now(),anexos:[...S.cfiles]});S.cfiles=[];reg('mensagem_enviada',{caso:id});
   if(SIM&&S.viewer===c.solicitante&&c.status!=='done'){
     const resposta=['docs','semdoc','temdoc','temcad','semcad','renda','agradece'].some(k=>tagsDe(t).has(k));   /* parece resposta à pergunta da Habitação? */
     if(c.status==='wait'&&(c.simAguarda||[]).length&&resposta)c.simAguarda.forEach(k=>agendaSim(c,[[10,'aceita',k,t]]));
